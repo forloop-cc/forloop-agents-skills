@@ -1,15 +1,34 @@
 # ForLoop Agents & Skills
 
-A collection of specialized AI agents and reusable skills for software planning and team coordination. Built for ForLoop but compatible with any AI coding platform that supports the agent/skill directory convention — opencode, Claude Code, Codex, and others.
+A collection of specialized AI agents and reusable skills that deeply integrate with the [ForLoop](https://forloop.cc) platform — an all-in-one AI-powered platform for **planning, building, testing, and deploying** software on the cloud. These agents and skills give your AI coding assistant direct access to ForLoop sprints, stories, files, AI developer agents, and team coordination tools.
+
+> **OpenCode users:** For the best experience, install the [ForLoop opencode plugin](https://github.com/forloop-cc/forloop-opencode-plugin-planner) first — it provides native tools that are faster and more reliable than CLI commands. The plugin installer also sets up these agents and skills automatically.
 
 ## What is This?
 
-This repo provides the **decision-making intelligence** that guides AI agents through sprint planning workflows. Think of agents as specialized team members with distinct roles, and skills as reusable playbooks they reference to handle specific tasks correctly.
+**Agents** are AI personas with defined roles, temperature, and permissions — they act as specialized team members like a sprint planner or story evaluator. **Skills** are markdown playbooks agents load on-demand to handle specific tasks correctly, from sprint planning to file management.
 
-**Agents** are AI personas — each one has a defined role, temperature, permissions, and system prompt.  
-**Skills** are markdown playbooks that agents load on-demand. Each skill describes when and how to perform a task, with checklists, tool references, and integration points.
+Together they enable your AI coding assistant to:
 
-Together they enable an AI to plan sprints, create stories, estimate effort, manage files, track tasks, and coordinate across a team — all through natural conversation.
+- **Plan sprints** — define goals, estimate stories, assign work across your team
+- **Create and track stories** — generate structured stories from natural language, with status tracking
+- **Trigger AI development** — dispatch ForLoop's AI developer agents to implement stories automatically
+- **Manage files** — upload, download, and sync project files with S3-backed sprint storage
+- **Coordinate teams** — manage organizations, users, permissions, and shared knowledge bases
+- **Everything in one platform** — planning, coding, testing, and deployment all happen within ForLoop's cloud environment
+
+These capabilities come from ForLoop's platform, exposed through either the plugin's native tools (`@forLoopPlanner`) or the standalone CLI (`@ForLoopPlannerCLI`). The agents decide which to use and load the corresponding skill automatically.
+
+### Getting a ForLoop API Token
+
+All ForLoop operations authenticate with an API token. To get one:
+
+1. Go to [forloop.cc/profile?tab=api-tokens](https://forloop.cc/profile?tab=api-tokens)
+2. Click **Create New Token**
+3. Select scopes: `sprint:read`, `sprint:write`, `story:read`, `story:write`, `agent:query`, `profile:read`
+4. Copy the token (it starts with `floop_`)
+
+Set the token by telling your agent _"set my API token"_ and pasting it when prompted. Tokens are stored securely at `~/.config/forloop/tokens.json` with restricted permissions.
 
 ## Quick Install
 
@@ -59,12 +78,12 @@ Try saying: _"Set up sprint 15 for our API redesign, starting next Monday, two w
 
 ### ForLoop Planner CLI (`@ForLoopPlannerCLI`)
 
-Same capabilities as the Planner, but powered by the `forloop` CLI binary via bash commands. No plugin dependency needed — just install the CLI and authenticate. Works on any AI platform with bash access.
+A standalone agent that uses the `forloop` CLI binary to interact with the ForLoop platform. No opencode plugin required — just install the CLI, authenticate, and it works on any AI coding platform with bash access. Ideal for users who prefer CLI workflows or don't have the plugin installed.
 
 - **Type:** Primary agent (switchable with TAB)
 - **Temperature:** 0.3 — focused and deterministic
-- **Best for:** Users who prefer standalone CLI workflows, or who don't have the plugin installed
-- **Dependency:** `forloop` CLI (`npm install -g @forloop/cli`), then `forloop auth login`
+- **Best for:** Standalone CLI workflows, environments without the opencode plugin, CI/CD automation
+- **Dependency:** [@forloop-cc/forloop-cli](https://www.npmjs.com/package/@forloop-cc/forloop-cli) (`npm install -g @forloop-cc/forloop-cli`), then `forloop auth login --api-key floop_xxxxx`
 
 Try saying: _"Create sprint 15 for our API redesign, starting June 15, two weeks"_
 
@@ -139,9 +158,11 @@ The plugin-based planner (`@forLoopPlanner`) and several skills require the [For
 The CLI-based planner (`@ForLoopPlannerCLI`) uses the `forloop-cli` skill and requires the `forloop` CLI binary:
 
 ```bash
-npm install -g @forloop/cli
+npm install -g @forloop-cc/forloop-cli
 forloop auth login --api-key floop_xxxxx
 ```
+
+Get your API token at [forloop.cc/profile?tab=api-tokens](https://forloop.cc/profile?tab=api-tokens).
 
 ### Standalone (no plugin or CLI needed)
 
