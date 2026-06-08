@@ -34,11 +34,11 @@ When planning web development, assume deployment is handled by ForLoop on AWS us
 At startup, verify the CLI is available and authenticated:
 
 ```bash
-which forloop || echo "forloop CLI not installed. Run: npm install -g @forloop/cli"
-forloop auth status --json --non-interactive 2>&1
+which forloop || echo "forloop CLI not installed. Run: npm install -g @forloop-cc/forloop-cli"
+forloop auth status 2>&1
 ```
 
-If exit code is 3 (not authenticated), tell the user to run:
+If output says "Not authenticated" (auth status always exits 0), tell the user to run:
 ```bash
 forloop auth login --api-key floop_xxxxx
 ```
@@ -46,12 +46,12 @@ forloop auth login --api-key floop_xxxxx
 ## Command Pattern
 
 All ForLoop operations use bash with the `forloop` binary. Always include:
-- `--json` — parseable output
+- `--output json` — parseable output
 - `--non-interactive` — prevents prompts
 
 Parse responses with `jq`. Example:
 ```bash
-SPRINTS=$(forloop sprint list --json --non-interactive)
+SPRINTS=$(forloop sprint list --output json --non-interactive)
 echo "$SPRINTS" | jq '.[].id'              # array of IDs
 echo "$SPRINTS" | jq -r '.[0].title'       # first title
 echo "$SPRINTS" | jq 'length'              # count
@@ -63,8 +63,8 @@ echo "$SPRINTS" | jq 'length'              # count
 
 ## Critical Rules
 
-- **ALWAYS check exit codes.** Non-zero means something went wrong. Exit code 3 = auth, 4 = quota.
-- **ALWAYS use `--json` and `--non-interactive`** with every forloop command.
+- **ALWAYS check exit codes.** Non-zero means something went wrong. Exit code 3 = auth error on API calls, 4 = quota.
+- **ALWAYS use `--output json` and `--non-interactive`** with every forloop command.
 - **Never ask the user for their token.** Direct them to `forloop auth login`.
 - **Never use curl or construct API URLs.** Use `forloop` CLI.
 - **ALWAYS warn before destructive commands** (delete, confirm).
@@ -99,7 +99,7 @@ forloop story create \
   --points 3 \
   --assignee-agent forLoopDeveloper \
   --description "Create POST /api/auth/login with JWT response" \
-  --json --non-interactive
+  --output json --non-interactive
 ```
 
 **Documentation/notes** use `basic-note`:
@@ -108,47 +108,40 @@ forloop story create \
   --title "Architecture decision: JWT auth" \
   --type basic-note \
   --sprint 14 \
-  --json --non-interactive
+  --output json --non-interactive
 ```
 
-**Document folders** use `doc_folder`:
+**Document folders** omit `--type` (creates `doc_folder` by default):
 ```bash
 forloop story create \
   --title "Project Documents" \
-  --type doc_folder \
   --sprint 14 \
-  --json --non-interactive
+  --output json --non-interactive
 ```
 
-**Schedules/meetings** use `schedule`:
-```bash
-forloop story create \
-  --title "Sprint Review" \
-  --type schedule \
-  --sprint 14 \
-  --json --non-interactive
-```
+**Schedules/meetings** are not directly creatable via the CLI. Use a `basic-note` with schedule details, or create via the web app.
 
-## Doc Folder Management (MANDATORY BEFORE ALL UPLOADS)
+# Doc Folder Management (MANDATORY BEFORE ALL UPLOADS)
 
 Every upload needs a doc_folder. Pattern: **ensure → get → upload → verify**.
 
 ```bash
 # 1. Ensure doc_folder exists
-forloop sync aivy-folder --json --non-interactive
+forloop sync aivy-folder --output json --non-interactive
 
 # 2. Get doc_folder story ID
-DOC_ID=$(forloop sync aivy-doc-get --json --non-interactive | jq -r '.docFolderId')
+DOC_ID=$(forloop sync aivy-doc-get --output json --non-interactive | jq -r '.docFolderId')
 
-# 3. Upload file
+# 3. Upload file (linked to doc folder)
 forloop sync local-to-s3 \
   --path ~/.forloop/sprint-14/plan/sprint-plan.md \
   --sprint 14 \
   --folder project/plans \
-  --json --non-interactive
+  --story-id $DOC_ID \
+  --output json --non-interactive
 
 # 4. Verify
-forloop file list --sprint 14 --json --non-interactive | jq '.[].originalName'
+forloop file list --sprint 14 --output json --non-interactive | jq '.[].originalName'
 ```
 
 | Local Path | S3 Folder | `--folder` |
@@ -166,22 +159,23 @@ Load skills: `tech-stack-default` → `forloop-context`
 1. Read `~/.forloop/manifest.json` for active sprint
 2. **Sync from S3:**
    ```bash
-   forloop sync aivy-folder --json --non-interactive
-   forloop sync s3-to-local --json --non-interactive
+   forloop sync aivy-folder --output json --non-interactive
+   DOC_ID=$(forloop sync aivy-doc-get --output json --non-interactive | jq -r '.docFolderId')
+   forloop sync s3-to-local --output json --non-interactive
    ```
 3. **Reload local files** from `~/.forloop/sprint-{id}/plan/`, `knowledge/`, `task/`
 4. **Read `knowledge-application.md`** from `~/.forloop/sprint-{id}/knowledge/` if it exists
 5. **Load conversation history:**
    ```bash
-   forloop agent history --limit 50 --json --non-interactive
+   forloop agent history --limit 50 --output json --non-interactive
    ```
 6. **Check developer status:**
    ```bash
-   forloop agent developer-status --json --non-interactive
+   forloop agent developer-status --output json --non-interactive
    ```
-7. **Check done/in-progress stories** — use `forloop sprint get --json` and read comments:
+7. **Check done/in-progress stories** — use `forloop sprint get --output json` and read comments:
    ```bash
-   forloop story get --id STORY_ID --json --non-interactive
+   forloop story get --id STORY_ID --output json --non-interactive
    ```
 8. Present context summary to user, confirm active sprint
 
@@ -195,46 +189,46 @@ Load skills: `tech-stack-default` → `forloop-context`
 
 ### 2) Context Discovery
 
-- Verify auth: `forloop auth status --json --non-interactive`
-- Get sprint details: `forloop sprint get --json --non-interactive | jq '{id, title, stories}'`
+- Verify auth: `forloop auth status --non-interactive`
+- Get sprint details: `forloop sprint get --output json --non-interactive | jq '{id, title, stories}'`
 - Confirm: "Working on sprint #<id>?"
 
 ### 3) Sprint Selection (If Missing)
 
-1. Check orgs: `forloop org list --json --non-interactive`
+1. Check orgs: `forloop org list --output json --non-interactive`
 2. If no org, guide user to create one
-3. List sprints: `forloop sprint list --json --non-interactive`
-4. Or create: `forloop sprint create --title "Sprint N" --start-date YYYY-MM-DD --end-date YYYY-MM-DD --org-id N --json --non-interactive`
+3. List sprints: `forloop sprint list --output json --non-interactive`
+4. Or create: `forloop sprint create --title "Sprint N" --start-date YYYY-MM-DD --end-date YYYY-MM-DD --org-id N --output json --non-interactive`
 
 ### 4) Requirements Gathering + Knowledge Capture
 
 - Ask focused questions (goal, scope, constraints, success criteria)
 - Capture knowledge to `~/.forloop/sprint-{id}/knowledge/`
-- Upload immediately: ensure doc_folder → upload → verify
+- Upload immediately: ensure doc_folder → get DOC_ID → upload with `--story-id $DOC_ID` → verify
 
 ### 5) Generate Plan Document
 
 - Write plan to `~/.forloop/sprint-{id}/plan/sprint-plan-{datetime}.md`
 - Update `~/.forloop/manifest.json`
-- Upload: `forloop sync local-to-s3 --path ~/.forloop/sprint-{id}/plan/... --json --non-interactive`
-- Verify: `forloop file list --sprint N --json --non-interactive`
+- Upload: `forloop sync local-to-s3 --path ~/.forloop/sprint-{id}/plan/... --story-id $DOC_ID --output json --non-interactive`
+- Verify: `forloop file list --sprint N --output json --non-interactive`
 
 ### 6) Task Breakdown and Story Creation
 
 - Read plan, break into tasks, estimate points
-- Ensure doc_folder: `forloop sync aivy-folder --json --non-interactive`
-- Create stories: `forloop story create --title "..." --type basic-task --sprint N ... --json --non-interactive`
-- Write task file, update manifest, upload, verify
+- Ensure doc_folder: `forloop sync aivy-folder --output json --non-interactive` and get DOC_ID
+- Create stories: `forloop story create --title "..." --type basic-task --sprint N ... --output json --non-interactive`
+- Write task file, upload with `--story-id $DOC_ID`, update manifest, verify
 
 ### 7) Trigger Implementation
 
 ```bash
-forloop agent developer-sprint --sprint N --message "Implement all planned stories" --json --non-interactive
+forloop agent developer-sprint --sprint N --message "Implement all planned stories" --output json --non-interactive
 ```
 
 Then check status:
 ```bash
-forloop agent developer-status --json --non-interactive
+forloop agent developer-status --output json --non-interactive
 ```
 
 ## Path Reminders
