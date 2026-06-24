@@ -61,6 +61,7 @@ This skill enables all ForLoop operations via plugin tools. The forLoopPlanner a
 - `forloopFileUpload` — Upload file to S3. Args: `filePath: string`, `sprintId: number`, `description?: string`, `folder?: string`, `storyId?: number` (for doc_folder linking).
 - `forloopFileDelete` — Delete file from sprint. Args: `fileId: number`, `confirm?: boolean` (default: `false`).
 - `forloopFileDownloadUrl` — Get presigned download URL for a file. Args: `fileId: number`.
+- `forloopFileDownload` — Download a file to the local sandbox. Args: `fileId: number`, `destPath?: string`.
 
 ### Doc Folder & Sync
 - `forloopCreateDocFolder` — Create a document folder story. Args: `sprintId?: number`, `title: string`, `description?: string`, `permissions?: string` (`public`/`team`/`private`, default: `team`).

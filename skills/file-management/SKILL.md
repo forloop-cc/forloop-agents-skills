@@ -389,14 +389,14 @@ For multiple `.forloop/` files, use `forloopSyncLocalToS3` for each file (see Fo
 
 ### Get Download URL
 
-**Tool:** `forloopFileDownload`
+**Tool:** `forloopFileDownloadUrl`
 
 **Arguments:**
 - `--fileId` (required)
 
 **Example:**
 ```
-forloopFileDownload(fileId=456)
+forloopFileDownloadUrl(fileId=456)
 ```
 
 **Expected Output:**
@@ -465,7 +465,7 @@ forloopFileUpload(
 )
 
 # Get download URL for sharing
-forloopFileDownload(fileId=789)
+forloopFileDownloadUrl(fileId=789)
 ```
 
 ### Scenario 4: Clean Up Old Files
@@ -557,7 +557,7 @@ Stored in ForLoop database:
 
 ---
 
-### forloopFileDownload
+### forloopFileDownloadUrl
 
 **Purpose:** Get signed download URL
 
@@ -565,6 +565,18 @@ Stored in ForLoop database:
 - `--fileId` (required)
 
 **Returns:** Time-limited download URL
+
+---
+
+### forloopFileDownload
+
+**Purpose:** Download file to local sandbox
+
+**Arguments:**
+- `--fileId` (required)
+- `--destPath` (optional) — destination path relative to sandbox downloads dir
+
+**Returns:** Local file path and size
 
 ---
 
