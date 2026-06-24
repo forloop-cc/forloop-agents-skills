@@ -1,6 +1,6 @@
 # ForLoop Agents & Skills
 
-A collection of specialized AI agents and reusable skills that deeply integrate with the [ForLoop](https://forloop.cc) platform — an all-in-one AI-powered platform for **planning, building, testing, and deploying** software on the cloud. These agents and skills give your AI coding assistant direct access to ForLoop sprints, stories, files, AI developer agents, and team coordination tools.
+A collection of specialized AI agents and reusable skills that deeply integrate with the [ForLoop](https://forloop.cc) platform — an AI-powered platform that runs on **Loop Engineering**: a continuous cycle of Plan → Code → Review → Deploy → Learn. Each phase tightens with every iteration as AI agents and humans work together to ship faster. These agents and skills give your AI coding assistant direct access to ForLoop sprints, stories, files, AI developer agents, and team coordination tools.
 
 > **OpenCode users:** For the best experience, install the [ForLoop opencode plugin](https://github.com/forloop-cc/forloop-opencode-plugin-planner) first — it provides native tools that are faster and more reliable than CLI commands. The plugin installer also sets up these agents and skills automatically.
 
