@@ -101,6 +101,7 @@ If `.forloop/manifest.json` doesn't exist or contains no active sprint:
 - Always confirm which sprint you are working on. Even if a sprint is auto-resolved, ask the user to confirm it before planning.
 - If no sprint is selected, ask the user to choose a sprint or create a new sprint before proceeding.
 - For requirements, ask targeted questions, summarize requirements back to the user, and get explicit confirmation.
+- Never use the structured OpenCode `question` tool. Ask confirmations and clarifying questions as normal assistant text, then stop and wait for the user's next chat message.
 - Capture knowledge automatically during requirement gathering.
 - Produce plan deliverables as files in `~/.forloop/sprint-{sprintId}/plan/`, then upload them to the sprint.
 - After confirmation, break the plan into actionable tasks and save them to ForLoop using task-tracking skill.
@@ -158,10 +159,127 @@ The full workflow is documented in **[Default Workflow → Section 0](#0-session
 
 | Template Slug | Purpose |
 |--------------|---------|
-| `basic-task` | Implementation work: features, bug fixes, refactoring, deployment, CI/CD, infra |
+| `basic-task` | All agent work: features, bug fixes, refactoring, deployment, CI/CD, infra, testing, file/media generation |
 | `basic-note` | Documentation, research, planning notes — non-implementation |
 
 **When in doubt, use `basic-task`.** Typical call: `forloopStoryTemplate(templateSlug="basic-task", taskTitle="...", sprintId=N, priority="high", points=N, assigneeAgentKey="forLoopDeveloper")`
+
+**Agent assignment by story type (use `tech-stack-default` Development Team section for details):**
+- Code implementation → `forLoopDeveloper`
+- Testing/validation → `forLoopTester`
+- Deployment/infrastructure → `forLoopDevops`
+- File/media generation → `forLoopCreator` (dispatched by Supervisor, different workflow from code pipeline)
+
+**Creator is dispatched by the Supervisor** — follows a different workflow from the 4-phase code pipeline. Creator stories complete when files are generated, committed, and auto-deployed via `frontend/public/` → Vite → CI/CD. The Developer agent then uses these files for integration (e.g., `<img src="/images/logo.svg" />`). If a request involves BOTH file generation AND code integration (e.g., "Generate music and build audio player"), split into two stories: Creator (assets) + Developer (integration), with Developer depending on Creator.
+
+## Story Content Specification
+
+Every story created via `forloopStoryTemplate` must follow these content rules. This is the single source of truth for what goes in each field.
+
+### Field Reference
+
+| Field | Format | Required | Example |
+|-------|--------|----------|---------|
+| `taskTitle` | Short imperative, verb-led | Yes | `"Implement user registration API"` |
+| `description` | Structured markdown (see template below) | Yes | See description template |
+| `priority` | `high` / `medium` / `low` | No (default `medium`) | `high` |
+| `points` | 0-10, Fibonacci-like (`0,1,2,3,5`) | Yes | `3` |
+| `assigneeAgentKey` | One of: `forLoopDeveloper`, `forLoopTester`, `forLoopDevops`, `forLoopCreator` | Yes | `forLoopDeveloper` |
+
+**`taskTitle` rules:**
+- Use a short imperative phrase starting with a verb: "Implement...", "Fix...", "Deploy...", "Generate...", "Write..."
+- NOT the full user story sentence — that goes in `description`
+- Keep under ~80 characters
+- Good: `"Implement user login API endpoint"`, `"Generate weekly project report"`
+- Bad: `"As a user, I want to log in so that I can access my dashboard"` (too long, goes in description)
+
+**`points` rules:**
+- Must assign points before creation; default to `3` if unsure
+- Stories > 5 points must be split
+- Creator stories (file generation): 1-3 points
+- Code implementation: 2-5 points
+- Testing/Devops: 1-3 points
+
+### Description Template
+
+The `description` field uses this structure for all story types. Tailor sections to the agent type (see per-agent guidance below).
+
+```
+## Goal
+[1-2 sentences describing what user need this addresses and the expected outcome]
+
+## Scope
+- [ ] Key deliverable 1
+- [ ] Key deliverable 2
+- [ ] ...
+
+## Acceptance Criteria
+1. Given [context], When [action], Then [expected outcome]
+2. ...
+
+## Dependencies
+- Depends on Story #{id} (if any)
+
+## Notes
+- [Assumptions, risks, references, or additional context]
+```
+
+**Example (Developer story):**
+```
+## Goal
+Allow users to register with email and password and receive a JWT for authenticated API calls.
+
+## Scope
+- [ ] POST /api/auth/register endpoint with email + password validation
+- [ ] JWT token generation with 1-hour expiry
+- [ ] Error responses for duplicate email, weak password, missing fields
+
+## Acceptance Criteria
+1. Given a new user with valid email and password, When they call POST /auth/register, Then they receive a 201 with a JWT token
+2. Given an already registered email, When registration is attempted, Then a 409 Conflict is returned
+3. Given a password shorter than 8 characters, When registration is attempted, Then a 400 Bad Request is returned
+
+## Dependencies
+- None (first story)
+
+## Notes
+- Using bcryptjs for password hashing (Lambda-compatible, no native modules)
+- JWT secret from process.env.JWT_SECRET
+```
+
+**Example (Creator story):**
+```
+## Goal
+Generate 10 lo-fi background music tracks and album cover art for the music streaming app.
+
+## Scope
+- [ ] 10 x MP3 tracks (3-5 min each, lo-fi genre, 80-100 BPM)
+- [ ] 1 x album cover image (PNG, 512x512, moody aesthetic)
+- [ ] 1 x manifest.json listing all tracks with metadata
+
+## Acceptance Criteria
+1. All MP3 files play without errors
+2. Album cover is 512x512 PNG under 2MB
+3. manifest.json contains title, artist, duration, BPM for each track
+4. All files placed under frontend/public/audio/ and frontend/public/images/
+
+## Dependencies
+- None
+
+## Notes
+- Style: chilled lo-fi, warm tones, no vocals
+- Cover art: dark purple/blue gradient, minimalist
+- Developer will use `/audio/track-*.mp3` and `/images/album-cover.png` for integration
+```
+
+### Per-Agent Description Guidance
+
+| Agent | Include in description |
+|-------|----------------------|
+| **forLoopDeveloper** | API endpoint paths, request/response shapes, tech constraints (Lambda-compatible, DynamoDB schema, React component name) |
+| **forLoopTester** | Test scope, edge cases to cover, expected coverage threshold, which files need tests |
+| **forLoopDevops** | AWS resource names (`fl-{tenant}-{project}-{env}`), deploy targets (`backend`/`frontend`/`all`), IAM roles, Terraform module names |
+| **forLoopCreator** | File types and quantities, target directory (`frontend/public/{audio,images,documents,...}`), style/branding/theme preferences, naming conventions |
 
 ## Doc Folder Management (MANDATORY BEFORE ALL UPLOADS)
 
@@ -184,7 +302,7 @@ Every S3 upload must be linked to a doc_folder story. The pattern: **ensure → 
 
 **Load skills in this order:**
 
-1. **Load `tech-stack-default` skill** — internalize the default tech stack (React 18 + Vite, Lambda Node.js 20, DynamoDB, Terraform). Never ask users about these choices.
+1. **Load `tech-stack-default` skill** — internalize the default tech stack (React 18 + Vite, Lambda Node.js 20, DynamoDB, Terraform) AND the development team capabilities (forLoopDeveloper, forLoopTester, forLoopDevops, forLoopCreator). Understand what each agent can produce, their constraints, and how the 4-phase pipeline works. Never ask users about these choices.
 2. **Run forloop-context skill** — load sprint context from `~/.forloop/sprint-{id}/`
 3. Check `~/.forloop/` folder and `manifest.json`
 
@@ -203,7 +321,7 @@ Every S3 upload must be linked to a doc_folder story. The pattern: **ensure → 
 8. Confirm active sprint with user
 9. **MANDATORY: Sync from S3:** Call `forloopSyncAivyFolder(sprintId={sprintId})` then `forloopSyncS3ToLocal(sprintId={sprintId})`
 10. Reload updated local files after sync
- 11. Present updated context summary
+11. Present updated context summary
 12. **MANDATORY: Load Application Knowledge** — If `knowledge-application.md` exists in `~/.forloop/sprint-{sprintId}/knowledge/`, read it to understand current application design, features, codebase structure, infrastructure, and recent changes (see Application Knowledge section below)
 13. **MANDATORY: Load Conversation History** — Call `forloopAgentHistory(sprintId={sprintId}, limit=50)` to get recent opencode conversations. Present summary to user (message count, recent topics). Use this context throughout the session.
 14. **MANDATORY: Check Developer Task Status** — Call `forloopDeveloperStatus(sprintId={sprintId})` to check if a developer sprint is currently running (Step Functions execution). This tells you if the ECS developer task is alive, completed, or failed. If `hasActiveTask` is false, no task is running.
@@ -299,15 +417,20 @@ After plan created and user confirms:
 
 1. Read plan file from `~/.forloop/sprint-{sprintId}/plan/`
 2. Break into actionable tasks
-3. Estimate story points (`story-points` skill)
-4. Apply templates (`template-based-tasks` skill)
-5. Present breakdown to user for confirmation
-6. **Ensure doc_folder exists:** Call `forloopSyncAivyFolder(sprintId={sprintId})` then `forloopAivyDocGet(sprintId={sprintId})`
-7. Create stories in ForLoop via `forloopStoryTemplate`
-8. Write task file to `~/.forloop/sprint-{sprintId}/task/task-{sprintId}-{datetime}.md`
-9. Update `~/.forloop/manifest.json` with task file and story IDs
-10. **Upload task file to S3 with doc_folder linking:** Call `forloopSyncLocalToS3(filePath="~/.forloop/sprint-{sprintId}/task/task-{sprintId}-{datetime}.md", sprintId={sprintId}, folder="project/tasks", storyId={docFolderId})`
-11. **Verify upload:** Call `forloopFileList(sprintId={sprintId})`
+3. Estimate story points (`story-points` skill) — use Creator-specific estimation (1-3 pts) for file generation tasks
+4. Assign each task to the correct agent based on task type (see Agent Assignment table above):
+   - Code implementation → `forLoopDeveloper`
+   - Testing/validation → `forLoopTester`
+   - Deployment/infrastructure → `forLoopDevops`
+   - File/media generation → `forLoopCreator`
+5. Apply templates (`template-based-tasks` skill) — all four agents use `templateSlug=basic-task`
+6. Present breakdown to user for confirmation
+7. **Ensure doc_folder exists:** Call `forloopSyncAivyFolder(sprintId={sprintId})` then `forloopAivyDocGet(sprintId={sprintId})`
+8. Create stories in ForLoop via `forloopStoryTemplate` with correct `assigneeAgentKey` for each story
+9. Write task file to `~/.forloop/sprint-{sprintId}/task/task-{sprintId}-{datetime}.md`
+10. Update `~/.forloop/manifest.json` with task file and story IDs
+11. **Upload task file to S3 with doc_folder linking:** Call `forloopSyncLocalToS3(filePath="~/.forloop/sprint-{sprintId}/task/task-{sprintId}-{datetime}.md", sprintId={sprintId}, folder="project/tasks", storyId={docFolderId})`
+12. **Verify upload:** Call `forloopFileList(sprintId={sprintId})`
 
 **Verify stories created:**
 Call `forloopSprintGet(sprintId=<id>, includeStories=true)`
@@ -391,6 +514,7 @@ Follow the **[Standard Operating Rules](#standard-operating-rules)** above, plus
 2. **Sync from S3** → call `forloopSyncAivyFolder` + `forloopSyncS3ToLocal`
 3. **Load conversations** → call `forloopAgentHistory(sprintId=14)` to check past discussions
 4. Verify token → `forloopTokenGet`
+5. **Get sprint details** → `forloopSprintGet(sprintId=14, includeStories=true)`
 6. **Capture knowledge** → knowledge-management, upload with doc_folder linking
 7. **Summarize and confirm:** present requirements, get explicit confirmation
 8. **Create plan** → plan-documentation, write to `~/.forloop/sprint-{sprintId}/plan/`, upload (see Doc Folder Management)

@@ -116,6 +116,21 @@ forloopStoryTemplate(
 )
 ```
 
+### Agent Assignment by Story Type
+
+| Task Type | assigneeAgentKey | Template |
+|-----------|-----------------|----------|
+| Code implementation, features, bug fixes | `forLoopDeveloper` | `basic-task` |
+| Testing, QA, validation, test writing | `forLoopTester` | `basic-task` |
+| Deployment, infrastructure, CI/CD | `forLoopDevops` | `basic-task` |
+| File/media generation (DOCX, PDF, XLSX, PPTX, music, images) | `forLoopCreator` | `basic-task` |
+
+**Creator stories are dispatched by the Supervisor** and follow a different workflow — they complete when files are generated, committed, and auto-deployed via `frontend/public/` → Vite → CI/CD. They do NOT go through Phase 2 (local validation) or Phase 3-4 (code deploy + E2E) because they produce static assets, not application code. The Developer agent subsequently uses Creator's output files (e.g., `<img src="/images/logo.svg" />`).
+
+**Multi-agent split:** If a story involves BOTH file generation AND code integration (e.g., "Generate music and build audio player"), split into two stories:
+- Story A: Creator generates files → `assigneeAgentKey=forLoopCreator`, 1-2 pts
+- Story B: Developer integrates files → `assigneeAgentKey=forLoopDeveloper`, 2-5 pts (depends on Story A)
+
 ### Create a story directly (use only for doc_folder types)
 ```
 forloopStoryCreate(
@@ -198,29 +213,10 @@ Before creating story, verify:
 | 3 | Write vague acceptance criteria ("works properly") | Use Given/When/Then with specific outcomes |
 | 4 | Skip the "so that" clause | Always articulate the benefit/value |
 | 5 | Create stories > 5 points | Split into smaller stories |
-| 6 | Implement code during story creation | This is planning-only — use `forloopStoryCreate` tool |
-
-## Quality Gates
-
-- [ ] Story follows "As a [user], I want [goal], so that [benefit]" format
-- [ ] Acceptance criteria use Given/When/Then format
-- [ ] Story passes all INVEST criteria
-- [ ] Story is ≤ 5 points (split if larger)
-- [ ] Priority set (high/medium/low)
-- [ ] Story created via `forloopStoryTemplate` with appropriate `templateSlug` (use `basic-task` for implementation, `basic-note` for documentation)
-- [ ] Story verified via `forloopSprintGet(includeStories=true)`
-
-## Anti-Patterns
-
-| # | ❌ Don't | ✅ Do Instead |
-|---|---------|--------------|
-| 1 | Write technical tasks without user value | Frame as "As a [user], I want [goal], so that [benefit]" |
-| 2 | Combine multiple features in one story | Split into independent stories |
-| 3 | Write vague acceptance criteria ("works properly") | Use Given/When/Then with specific outcomes |
-| 4 | Skip the "so that" clause | Always articulate the benefit/value |
-| 5 | Create stories > 5 points | Split into smaller stories |
 | 6 | Implement code during story creation | This is planning-only — use `forloopStoryTemplate` tool |
 | 7 | Create stories without a template | Always use `templateSlug=basic-task` or `basic-note` |
+
+## Quality Gates
 
 ## Examples
 

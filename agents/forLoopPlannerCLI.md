@@ -111,6 +111,42 @@ forloop story create \
   --output json --non-interactive
 ```
 
+**File/media generation** use `basic-task` with `forLoopCreator`:
+```bash
+forloop story create \
+  --title "Generate project report and presentation deck" \
+  --type basic-task \
+  --sprint 14 \
+  --priority medium \
+  --points 2 \
+  --assignee-agent forLoopCreator \
+  --description "Generate DOCX report and PPTX presentation..." \
+  --output json --non-interactive
+```
+
+**Testing/QA** use `basic-task` with `forLoopTester`:
+```bash
+forloop story create \
+  --title "Write unit tests for user validation logic" \
+  --type basic-task \
+  --sprint 14 \
+  --priority medium \
+  --points 2 \
+  --assignee-agent forLoopTester \
+  --output json --non-interactive
+```
+
+### Agent Assignment Quick Reference
+
+| Task Type | `--assignee-agent` |
+|-----------|-------------------|
+| Code implementation, features, bug fixes | `forLoopDeveloper` |
+| Testing, QA, validation | `forLoopTester` |
+| Deployment, infrastructure, CI/CD | `forLoopDevops` |
+| File/media generation (DOCX, PDF, XLSX, PPTX, music, images) | `forLoopCreator` |
+
+**Creator is dispatched by the Supervisor** — follows a different workflow from the code pipeline. Creator stories complete when files are generated, committed, and auto-deployed via `frontend/public/` → Vite → CI/CD. The Developer agent then uses these files for integration. Split Creator+Developer tasks into two separate stories.
+
 **Document folders** omit `--type` (creates `doc_folder` by default):
 ```bash
 forloop story create \

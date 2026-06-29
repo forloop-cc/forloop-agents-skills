@@ -152,7 +152,7 @@ Always include `templateSlug` — use `"basic-task"` for implementation tasks, `
 Return two sections:
 
 1) A short human summary (for the main agent to show the user)
-2) A tool payload block (for the main agent to copy directly into `forloopStoryCreate`)
+2) A tool payload block (for the main agent to copy directly into `forloopStoryTemplate`)
 
 ### 1) Summary
 
@@ -276,6 +276,14 @@ Maintain mental library of calibrated stories:
 | Authentication feature | 3-5 |
 | Dashboard/Reports | 5-8 |
 | Search functionality | 5-8 |
+| **Generate single document (DOCX, PDF, XLSX, PPTX)** | **1-2** |
+| **Generate single image, logo, or 1-3 music tracks** | **1** |
+| **Generate multi-file document pack (report + spreadsheet + presentation)** | **2** |
+| **Generate playlist (10+ tracks with cover art and manifest)** | **2** |
+| **Generate sticker pack or emoji set** | **2** |
+| **Generate full media library (music + images + data)** | **3** |
+
+**Creator stories (file generation) are NOT code implementation.** They are dispatched by the Supervisor and follow a different workflow — they complete when files are generated, committed under `frontend/public/`, and auto-deployed via Vite → CI/CD. They do not go through the 4-phase code pipeline (no local validation, no deployment) because they produce static assets, not application code. The Developer agent subsequently uses these files for integration. If a task involves BOTH file generation AND code integration, split into two stories: Creator (assets, 1-2 pts) and Developer (integration, 2-5 pts).
 
 ## Common Estimation Pitfalls
 

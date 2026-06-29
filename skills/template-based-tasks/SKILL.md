@@ -209,23 +209,56 @@ Template status values differ from database values:
 - `forLoopDevops` — AWS infrastructure, CI/CD, deployment, Terraform
 - `forLoopCreator` — Document/media generation (DOCX, PDF, XLSX, PPTX, music, images)
 
-**Example:**
+**Example (Implementation):**
 ```
 forloopStoryTemplate(
   templateSlug=basic-task,
-  taskTitle="Write unit tests",
+  taskTitle="Implement user login API endpoint",
   assigneeAgentKey=forLoopDeveloper,
   priority=medium,
   points=5
 )
 ```
 
-**Metadata stored:**
+**Example (Testing):**
+```
+forloopStoryTemplate(
+  templateSlug=basic-task,
+  taskTitle="Write unit tests for user validation logic",
+  assigneeAgentKey=forLoopTester,
+  priority=medium,
+  points=2
+)
+```
+
+**Example (Deployment):**
+```
+forloopStoryTemplate(
+  templateSlug=basic-task,
+  taskTitle="Deploy backend Lambda to dev environment",
+  assigneeAgentKey=forLoopDevops,
+  priority=high,
+  points=2
+)
+```
+
+**Example (File Generation):**
+```
+forloopStoryTemplate(
+  templateSlug=basic-task,
+  taskTitle="Generate project report and presentation deck",
+  assigneeAgentKey=forLoopCreator,
+  priority=medium,
+  points=2
+)
+```
+
+**Metadata stored (example from Implementation task):**
 ```json
 {
-  "taskTitle": "Write unit tests",
+  "taskTitle": "Implement user login API endpoint",
   "description": "...",
-  "assignee": "agent:developer",
+  "assignee": "agent:forLoopDeveloper",
   "status": "not-started",
   "priority": "medium",
   "points": 5

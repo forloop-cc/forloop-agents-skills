@@ -119,7 +119,8 @@ Tasks:
 **Point scale:**
 | Points | Effort | Description |
 |--------|--------|-------------|
-| 1 | < 4 hours | Trivial |
+| 0 | < 30 min | Trivial (copy fix, config change) |
+| 1 | < 4 hours | Very small |
 | 2 | 4-8 hours | Small |
 | 3 | 1-2 days | Moderate |
 | 5 | 2-4 days | Complex |
@@ -134,11 +135,8 @@ Tasks:
 **Available templates:**
 | Template | Use Case |
 |----------|----------|
-| `basic-task` | Standard feature |
-| `bug-fix` | Bug resolution |
-| `technical-debt` | Refactoring |
-| `research` | Investigation, spikes |
-| `documentation` | Docs, guides |
+| `basic-task` | All implementation tasks (features, bugs, refactoring, deployment, testing) |
+| `basic-note` | Documentation, research, planning notes |
 
 **Template fields:**
 ```yaml
@@ -159,17 +157,24 @@ assigneeAgentKey: forLoopDeveloper
 
 | # | Task | Agent | Template | Points | Priority |
 |---|------|-------|----------|--------|----------|
-| 1 | Registration API | developer | basic-task | 5 | high |
-| 2 | Login endpoint | developer | basic-task | 3 | high |
-| 3 | Password reset | developer | basic-task | 5 | medium |
-| 4 | JWT generation | developer | technical-debt | 5 | high |
-| 5 | Auth middleware | developer | technical-debt | 3 | high |
+| 1 | Registration API | forLoopDeveloper | basic-task | 5 | high |
+| 2 | Login endpoint | forLoopDeveloper | basic-task | 3 | high |
+| 3 | Password reset | forLoopDeveloper | basic-task | 5 | medium |
+| 4 | JWT generation | forLoopDeveloper | basic-task | 5 | high |
+| 5 | Auth middleware | forLoopDeveloper | basic-task | 3 | high |
 
 **Agent Assignment Rules:**
 - Implementation/features/bug fixes → `forLoopDeveloper`
 - Testing/QA/validation → `forLoopTester`
 - AWS/CI/CD/deployment/infrastructure → `forLoopDevops`
-- Document/media generation → `forLoopCreator`
+- File/media/document generation → `forLoopCreator`
+
+**Creator workflow (dispatched by Supervisor, different from code pipeline):** Creator stories are NOT part of the 4-phase development pipeline. They complete when files are generated, committed, and auto-deployed via `frontend/public/` → Vite → CI/CD. No Phase 2 (local validation) or Phase 3 (deployment) needed — Creator produces static assets that Developer subsequently uses for integration.
+
+**Multi-agent stories:** If a task involves BOTH file generation AND code integration (e.g., "Generate music and build audio player"), split into two stories:
+- Story A: Creator generates the files (assets only, no code)
+- Story B: Developer integrates the files (depends on Story A)
+The Creator returns a structured JSON report with file paths — use this report when writing the Developer story's description to reference correct paths (e.g., `<audio src="/audio/track.mp3" />`).
 
 Total: 5 stories, 21 points
 
@@ -237,7 +242,7 @@ forloopStoryTemplate(
   sprintId=14,
   priority=high,
   points=5,
-  assigneeAgentKey=developer
+  assigneeAgentKey=forLoopDeveloper
 )
 ```
 
@@ -399,9 +404,10 @@ forloopSyncLocalToS3(
 2. Break into 5 tasks
 3. Estimate: 5, 3, 5, 5, 3 = 21 points
 4. Apply templates with agent assignments:
-   - "Implement registration API" → developer (implementation)
-   - "Write sprint plan" → planner (planning task)
-   - "Deploy to AWS" → deployer (deployment task)
+   - "Implement registration API" → forLoopDeveloper (implementation)
+   - "Write unit tests for authentication" → forLoopTester (testing)
+   - "Deploy to AWS" → forLoopDevops (deployment)
+   - "Generate project documentation" → forLoopCreator (file generation)
 5. Confirm with user
 6. Create stories via `forloopStoryTemplate` with:
    - `--points` set to estimated value
@@ -530,7 +536,7 @@ Always call story-points skill before story creation. If estimation fails, use d
 ### Don't
 - ❌ Create tasks without plan
 - ❌ Skip confirmation
-- ❌ Create stories > 8 points
+- ❌ Create stories > 5 points (split first)
 - ❌ Create stories without points
 - ❌ Leave agent-suitable stories unassigned
 - ❌ Upload to wrong S3 folder
@@ -547,7 +553,7 @@ Always call story-points skill before story creation. If estimation fails, use d
 | # | ❌ Don't | ✅ Do Instead |
 |---|---------|--------------|
 | 1 | Create stories without reading plan first | Always read plan document before breaking into tasks |
-| 2 | Create stories > 8 points | Split into smaller stories |
+| 2 | Create stories > 5 points (split first) | Split into smaller stories |
 | 3 | Create stories without points | Estimate first, default to 3 if unsure |
 | 4 | Leave agent-suitable stories unassigned | Classify task type and assign correct agent (forLoopDeveloper/forLoopTester/forLoopDevops/forLoopCreator) |
 | 5 | Upload task file to wrong S3 folder | Use `folder=project/tasks` |
@@ -573,9 +579,7 @@ Always call story-points skill before story creation. If estimation fails, use d
 - [ ] Each story has correct `assigneeAgentKey`
 - [ ] Task file written to `.forloop/sprint-{sprintId}/task/task-{sprintId}-{datetime}.md`
 - [ ] manifest.json updated
-- [ ] Task file uploaded to `project/tasks/` S3 folder
-- [ ] Upload verified via `forloopFileList`
-- [ ] Upload verified via `forloopFileList`
+- [ ] Task file uploaded to `project/tasks/` S3 folder and verified via `forloopFileList`
 
 ## Rationalization Prevention
 

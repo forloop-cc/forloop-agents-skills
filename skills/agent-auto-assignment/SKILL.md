@@ -31,7 +31,7 @@ The four canonical agent keys used in ForLoop story assignment:
 | `forLoopDeveloper` | Backend/frontend implementation, bug fixes, refactoring, feature development | true |
 | `forLoopTester` | Testing, QA, E2E tests, unit test writing, local validation | true |
 | `forLoopDevops` | AWS infrastructure, CI/CD, deployment, Terraform, environment config | true |
-| `forLoopCreator` | Document/media generation, file creation (DOCX, PDF, XLSX, PPTX, music, images) | true |
+| `forLoopCreator` | Document/media generation, file creation (DOCX, PDF, XLSX, PPTX, music, images, video, GIFs, stickers). Dispatched by Supervisor; follows a different workflow from the code pipeline — completes after file generation and commit. Files go under `frontend/public/` for auto-deploy and use by Developer agent. | true |
 
 **Note:** The `planner` agent (Aivy) handles planning tasks — stories assigned to `planner` are for tracking planning work, not implementation. Implementation always goes to one of the four canonical agents above.
 
@@ -55,7 +55,7 @@ The four canonical agent keys used in ForLoop story assignment:
 - QA and validation stories
 - Local validation (lint, typecheck, test execution)
 
-**Keywords**: test, testing, qa, validate, validation, lint, typecheck, spec, coverage, assertion
+**Keywords**: test, testing, qa, validate, validation, lint, typecheck, spec, coverage, assertion, e2e
 
 ### Assign to `forLoopDevops`
 
@@ -66,17 +66,21 @@ The four canonical agent keys used in ForLoop story assignment:
 - Infrastructure as Code (Terraform, CloudFormation)
 - S3, CloudFront, DynamoDB provisioning
 
-**Keywords**: deploy, aws, lambda, infrastructure, ci/cd, pipeline, secrets, environment, release, serverless, cloudformation, terraform, s3, cloudfront, dynamodb, iam
+**Keywords**: deploy, aws, lambda, infrastructure, ci/cd, pipeline, secrets, environment, release, serverless, cloudformation, terraform, s3, cloudfront, dynamodb, iam, teardown, rollback
 
 ### Assign to `forLoopCreator`
 
-- Document generation (DOCX, PDF, reports, proposals)
-- Presentation creation (PPTX, slides, decks)
-- Spreadsheet creation (XLSX, CSV, financial models)
-- Media generation (music, images, video, GIFs, stickers)
-- File reformatting and templating
+- **Documents**: Word reports, PDFs, proposals, contracts, memos, letters, resumes, theses, form filling
+- **Spreadsheets**: Excel files, CSVs, pivot tables, financial models, budgets, formulas
+- **Presentations**: Slide decks, PowerPoint, PPTX, meeting decks, pitch decks
+- **Media**: Music tracks, songs, audio, playlists, album covers, artwork, images, video
+- **Speech**: Text-to-speech, TTS, voice narration, voiceovers
+- **Visuals**: Images, artwork, album art, logos, GIFs, animated stickers, emoji packs, cartoons, avatars
+- **Other**: File reformatting, template filling, web search, text generation
 
-**Keywords**: generate, create document, report, pdf, docx, xlsx, pptx, presentation, slides, music, image, video, gif, sticker, template, format
+**Keywords**: generate, create document, report, proposal, contract, memo, letter, resume, thesis, document, pdf, docx, xlsx, csv, spreadsheet, excel, financial model, budget, formula, presentation, slides, powerpoint, ppt, pptx, deck, music, song, audio, track, playlist, lyrics, album cover, album art, artwork, image, video, text-to-speech, tts, voice, narration, voiceover, sticker, gif, cartoon, emoji, expression pack, avatar, template, format, reformat
+
+**Note:** Creator is dispatched by the Supervisor like other agents but follows a different workflow — no Phase 2-4 needed since it produces static assets. Creator stories complete when files are generated and committed. They do not go through local validation (Phase 2) or deployment (Phase 3). Files go under `frontend/public/` for auto-deploy via Vite → CI/CD, and the Developer agent uses them for integration. If a story requires BOTH file generation AND code integration, split into two stories: one for Creator (assets) and one for Developer (integration), with Developer depending on Creator.
 
 ## Workflow
 
@@ -92,12 +96,23 @@ At the start of planning session:
 
 When creating a story, analyze the story title and description using keywords:
 
+**Multi-agent split detection (check FIRST):**
 ```
-IF contains(forLoopTester keywords)
+IF story contains BOTH Creator keywords (generate, create, music, image, etc.)
+   AND Developer/Devops keywords (implement, build, integrate, deploy, UI, component)
+  → SPLIT into two stories:
+     1. Creator story: file/assets generation only
+     2. Developer story: code integration only (depends on Creator story)
+  → Assign each story independently, then continue
+```
+
+**Single-agent classification:**
+```
+IF contains(forLoopTester keywords) AND is primary task type
   → assign to forLoopTester
-ELSE IF contains(forLoopDevops keywords)
+ELSE IF contains(forLoopDevops keywords) AND is primary task type
   → assign to forLoopDevops
-ELSE IF contains(forLoopCreator keywords)
+ELSE IF contains(forLoopCreator keywords) AND is primary task type
   → assign to forLoopCreator
 ELSE IF contains(forLoopDeveloper keywords) OR is implementation/bug
   → assign to forLoopDeveloper
@@ -205,6 +220,9 @@ forloopStoryTemplate(
 3. **No keywords matched**: Default to `forLoopDeveloper` for task stories, `forLoopCreator` for note stories
 4. **Sprint has no agents enabled**: Enable all four canonical agents before creating stories
 5. **ECS developer task running**: If `forloopDeveloperStatus` shows RUNNING, avoid assigning more stories to developer agents — they're already occupied
+6. **Story spans multiple agent types**: If a story requires BOTH file generation AND code integration (e.g., "Generate music tracks and build audio player UI"), split into two stories: one for Creator (assets), one for Developer (integration). Set Developer to depend on Creator.
+7. **Creator-only stories**: Creator follows a different workflow — no Phase 2-4 needed. Creator stories are complete after file generation, commit, and auto-deploy via `frontend/public/`. They do not require Tester or Devops stories.
+8. **Creator story with code references**: When a Creator story generates files, create a follow-up Developer story referencing those files. Example: Creator generates `frontend/public/images/logo.svg` → Developer story uses `<img src="/images/logo.svg" />`. Creator's output flows through the Supervisor → Developer agent works with the generated files.
 
 ## Compliance
 
@@ -220,6 +238,9 @@ forloopStoryTemplate(
 | 4 | Use `user` assigneeType for agent tasks | Use `agent` assigneeType with `assigneeAgentKey` |
 | 5 | Leave ambiguous stories unassigned | Default to `forLoopDeveloper` for unclassified tasks |
 | 6 | Assign development tasks while ECS is running | Check `forloopDeveloperStatus` first |
+| 7 | Assign "generate music + build UI" as one story | Split into Creator (assets) + Developer (integration) |
+| 8 | Assign Creator stories through the 4-phase pipeline | Creator follows a different workflow — no Phase 1-4 gating for static assets |
+| 9 | Skip Creator for document/media generation tasks | Use keyword matching — document/report/music/image are Creator territory |
 
 ## Quality Gates
 

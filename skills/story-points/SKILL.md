@@ -176,6 +176,30 @@ Before assigning points, consider:
 - "Build admin dashboard" → Split by feature
 - "Migrate entire auth system" → Split by phase
 
+### Creator-Specific Estimation
+
+File generation stories are faster than code implementation. Adjust estimates accordingly:
+
+**1-point Creator stories:**
+- Generate a single document (1 DOCX, 1 PDF, 1 XLSX)
+- Generate a single image or logo
+- Generate 1-3 music tracks with metadata
+
+**2-point Creator stories:**
+- Generate a multi-file document pack (report + spreadsheet + presentation)
+- Generate a playlist (10+ tracks with cover art and manifest)
+- Generate a sticker pack or emoji set
+- Generate a video with multiple assets
+
+**3-point Creator stories:**
+- Generate a full media library (music + images + data + manifest)
+- Generate a complex multi-section report with charts and formatting
+- Multi-format output (generate DOCX + PDF + PPTX from same content)
+
+**Split rule for Creator:** If the story asks for 50+ music tracks, 20+ images, or a "complete media platform", split into multiple Creator stories by asset type.
+
+**Multi-agent split:** If a story involves BOTH Creator (file generation) AND Developer (code integration), always split. Estimate separately: Creator 1-2 pts, Developer 2-5 pts.
+
 ## Common Mistakes
 
 ❌ **Averaging votes**: "Alice said 3, Bob said 8, let's call it 5"
@@ -200,8 +224,8 @@ Re-estimate when:
 
 **Process:**
 1. Note reason for re-estimation in story comments
- 2. Update points: `forloopStoryUpdate(storyId=<id>, points=<new>)`
- 3. Verify update: `forloopStoryGet(storyId=<id>)`
+2. Update points: `forloopStoryUpdate(storyId=<id>, points=<new>)`
+3. Verify update: `forloopStoryGet(storyId=<id>)`
 4. Track original vs. revised estimate for calibration
 
 ## Compliance
