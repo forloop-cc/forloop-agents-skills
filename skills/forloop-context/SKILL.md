@@ -232,7 +232,15 @@ forloopSyncS3ToLocal(sprintId={sprintId})
 
 If the user is not connected to any sprint yet, skip sync and proceed with normal onboarding.
 
-### Step 8: Fetch Enabled AI Agents (Required)
+### Step 8: Fetch Iteration Information
+
+5. **Fetch Iteration Information**: Call `forloopSubSprintList` for the active sprint to discover all iterations.
+   - Identify the active iteration (status: in_progress)
+   - Note how many total iterations exist
+   - Report: "Sprint '<name>' has <N> iteration(s). Active: <title> (<startDate> – <endDate>)"
+   - If no active sub-sprint exists (legacy sprint with no iterations), note: "No iterations defined yet. All stories are shown."
+
+### Step 9: Fetch Enabled AI Agents (Required)
 
 If a sprint is active, fetch the enabled AI agents for the sprint:
 
@@ -255,7 +263,7 @@ If the sprint has no agents enabled, enable all four canonical agents:
 forloopSprintAiAgentsUpdate(sprintId=<id>, enabledAgentKeys=["forLoopDeveloper","forLoopTester","forLoopDevops","forLoopCreator"])
 ```
 
-### Step 9: Check Developer Task Status (Required)
+### Step 10: Check Developer Task Status (Required)
 
 If a sprint is active, check whether a developer task is currently running:
 
@@ -268,7 +276,7 @@ This tells you:
 - If it has **SUCCEEDED** or **FAILED** (task completed, check story comments for details)
 - If **no task exists** (idle sprint, ready for new dispatch)
 
-### Step 10: Load Story Implementation Details (Required)
+### Step 11: Load Story Implementation Details (Required)
 
 For each story that is `done` or `in_progress`, read what the developer agents actually implemented:
 
@@ -448,11 +456,12 @@ Options:
 - [ ] User presented with summary
 - [ ] Structure created (if needed)
 - [ ] Aivy doc sync completed (Step 7)
-- [ ] Enabled AI agents fetched (Step 8)
-- [ ] Developer task status checked via `forloopDeveloperStatus` (Step 9)
+- [ ] Iteration information fetched via `forloopSubSprintList` (Step 8)
+- [ ] Enabled AI agents fetched (Step 9)
+- [ ] Developer task status checked via `forloopDeveloperStatus` (Step 10)
 - [ ] Conversation history loaded via `forloopAgentHistory(sprintId={sprintId})`
 - [ ] Application Knowledge loaded (`knowledge-application.md` from S3 sync — stored at `project/knowledge/`, uploaded by supervisor)
-- [ ] Story comments checked — For done/in_progress stories, use `forloopStoryGet(storyId={id}, includeComments=true)` to understand what developer agents actually implemented (Step 10)
+- [ ] Story comments checked — For done/in_progress stories, use `forloopStoryGet(storyId={id}, includeComments=true)` to understand what developer agents actually implemented (Step 11)
 
 ## Integration with Other Skills
 

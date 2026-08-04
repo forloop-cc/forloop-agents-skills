@@ -44,6 +44,15 @@ This skill enables all ForLoop operations via plugin tools. The forLoopPlanner a
 - `forloopSprintUpdate` — Update sprint fields. Args: `sprintId: number`, plus any of `title`, `description`, `startDate`, `endDate`, `isPrivate`.
 - `forloopSprintDelete` — Delete sprint and all stories. Args: `sprintId: number`, `confirm?: boolean` (default: `false`).
 
+### Sub-Sprint (Iteration) Tools
+
+| Tool | Signature | Description |
+|------|-----------|-------------|
+| `forloopSubSprintList` | `forloopSubSprintList({ sprintId?: number })` | List all iterations within a sprint. Falls back to active sprint. |
+| `forloopSubSprintCreate` | `forloopSubSprintCreate({ sprintId?: number, title?: string, startDate: string, endDate: string })` | Create a new iteration. The previously active iteration is auto-completed by the server. |
+| `forloopSubSprintUpdate` | `forloopSubSprintUpdate({ subSprintId: number, title?: string, startDate?: string, endDate?: string, status?: string })` | Update iteration title, dates, or status. Only one iteration can be `in_progress` at a time. |
+| `forloopSubSprintDelete` | `forloopSubSprintDelete({ subSprintId: number })` | Soft-delete an iteration. Linked stories retain their subSprintId and will not appear in default sprint views. |
+
 ### Story Management
 - `forloopStoryTemplate` — Create story from template. **MANDATORY for all non-doc_folder stories.** Args: `templateSlug: string` (`"basic-task"` or `"basic-note"`), `taskTitle: string`, `sprintId?: number` (auto-detected), `description?: string`, `priority?: string` (`low`/`medium`/`high`/`critical`), `points?: number` (0-10), `assigneeAgentKey?: string`, `status?: string`.
 - `forloopStoryCreate` — Create story (doc_folder type ONLY). Args: `title: string`, `sprintId?: number`, `type?: string` (`"doc_folder"` or `"schedule"`), `description?: string`, `priority?: string`, `points?: number`, `status?: string`, `assigneeAgentKey?: string`.

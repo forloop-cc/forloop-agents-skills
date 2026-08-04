@@ -266,6 +266,11 @@ forloopStoryTemplate(
 ]
 ```
 
+**Sub-sprint auto-linking**: When creating a story from the `basic-task` template, the server
+automatically links it to the currently active sub-sprint. No manual `subSprintId` is needed.
+Stories from other templates (doc-folder, basic-note, schedule-meeting) remain sprint-level
+and are always visible regardless of the active iteration.
+
 **BEFORE claiming complete:**
 1. Run: `forloopSprintGet(sprintId={sprintId}, includeStories=true)`
 2. Verify: All story IDs appear in response
