@@ -69,10 +69,10 @@ Skip any step = lying, not verifying
 | Claim | Requires | Not Sufficient |
 |-------|----------|----------------|
 | Plan uploaded | `forloopFileList` output shows file | Previous run, "should upload" |
-| Stories created | `forloopSprintGet(sprintId={id}, includeStories=true)` shows IDs | Tool returned success |
+| Stories created | `forloopSpaceSprintGet(sprintId={id}, includeStories=true)` shows IDs | Tool returned success |
 | Knowledge captured | `forloopFileList` shows knowledge file | File created locally |
 | S3 synced | Fresh `forloopFileList` output | "Upload looked successful" |
-| Sprint updated | `forloopSprintGet` shows changes | Tool returned no error |
+| Sprint updated | `forloopSpaceSprintGet` shows changes | Tool returned no error |
 
 ---
 
@@ -90,7 +90,7 @@ forloopFileList(sprintId={id})
 ### Task Tracking
 ```
 # After creating stories
-forloopSprintGet(sprintId={id}, includeStories=true)
+forloopSpaceSprintGet(sprintId={id}, includeStories=true)
 
 # Verify: Story IDs from creation appear in sprint
 # Read: Check story count matches expected
@@ -159,7 +159,7 @@ forloopFileList(sprintId={id})
 
 ### Story Creation
 ```
-✅ [Run forloopSprintGet --includeStories true] [See: 5 stories, IDs match] "Stories created (verified)"
+✅ [Run forloopSpaceSprintGet --includeStories true] [See: 5 stories, IDs match] "Stories created (verified)"
 ❌ "forloopStoryTemplate returned IDs" / "Stories should exist"
 ```
 
@@ -202,7 +202,7 @@ From verification failures:
 ### Step 9: Upload to S3
 
 **After upload, BEFORE claiming complete:**
-1. Run: `forloopSprintGet(sprintId={id}, includeStories=true)`
+1. Run: `forloopSpaceSprintGet(sprintId={id}, includeStories=true)`
 2. Read: Story count and IDs
 3. Verify: All story IDs exist
 4. ONLY THEN: Claim "Tasks created successfully"
@@ -276,7 +276,7 @@ You: Creating stories...
 [Captures story IDs: 201, 202, 203, 204, 205]
 
 You: Verifying story creation...
-[Runs forloopSprintGet(sprintId=14, includeStories=true)]
+[Runs forloopSpaceSprintGet(sprintId=14, includeStories=true)]
 
 You: ✅ Created 5 stories successfully (verified)
    - Story IDs: 201, 202, 203, 204, 205

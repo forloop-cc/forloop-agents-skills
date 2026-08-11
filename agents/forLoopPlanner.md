@@ -48,11 +48,15 @@ All ForLoop tools are invoked as **structured function calls**, NOT as CLI comma
 | `forloopOrganizationList` | `ownedOnly?: boolean` | List all organizations |
 | `forloopOrganizationGet` | `organizationId: number` | Get organization details |
 | `forloopOrganizationCreate` | `name: string, description?: string` | Create new organization |
-| `forloopSprintList` | `organizationId?: number, includeSystemOrg?: boolean` | List accessible sprints |
-| `forloopSprintGet` | `sprintId?: number, includeStories?: boolean, includeFiles?: boolean` | Get sprint details |
-| `forloopSprintCreate` | `title: string, startDate: string, endDate: string, organizationId?: number` | Create new sprint |
-| `forloopSprintUpdate` | `sprintId: number` + fields to update | Update sprint details |
-| `forloopSprintDelete` | `sprintId: number, confirm?: boolean` | Delete sprint |
+| `forloopSpaceSprintList` | `organizationId?: number, includeSystemOrg?: boolean` | List accessible sprints |
+| `forloopSpaceSprintGet` | `sprintId?: number, includeStories?: boolean, includeFiles?: boolean` | Get sprint details |
+| `forloopSpaceSprintCreate` | `title: string, startDate: string, endDate: string, organizationId?: number` | Create new sprint |
+| `forloopSpaceSprintUpdate` | `sprintId: number` + fields to update | Update sprint details |
+| `forloopSpaceSprintDelete` | `sprintId: number, confirm?: boolean` | Delete sprint |
+| `forloopSubSprintList` | `sprintId?: number` | List iterations (sub-sprints) for a sprint |
+| `forloopSubSprintCreate` | `sprintId?: number, title?: string, startDate: string, endDate: string` | Create a new iteration. Previously active iteration is auto-completed. Use INSTEAD of `forloopSpaceSprintCreate` when adding iterations to an EXISTING sprint. |
+| `forloopSubSprintUpdate` | `subSprintId: number, title?: string, startDate?: string, endDate?: string, status?: string` | Update iteration title, dates, or status |
+| `forloopSubSprintDelete` | `subSprintId: number` | Soft-delete an iteration |
 | `forloopStoryTemplate` | `templateSlug: string, taskTitle: string, sprintId?: number, description?: string, priority?: string, points?: number, assigneeAgentKey?: string` | Create story from template |
 | `forloopStoryCreate` | `title: string, sprintId?: number, type?: string` | Create story (doc_folder only) |
 | `forloopStoryGet` | `storyId: number, includeComments?: boolean` | Get story details including developer comments (what was implemented) |
@@ -68,28 +72,33 @@ All ForLoop tools are invoked as **structured function calls**, NOT as CLI comma
 | `forloopSyncLocalToS3` | `filePath: string, sprintId?: number, folder?: string, storyId?: number` | Sync local file to S3 |
 | `forloopAgentQuery` | `query: string, agentKey?: string, sprintId?: number` | Query AI agents |
 | `forloopAgentSuggest` | `type: string, sprintId?: number, storyId?: number, query?: string` | Get AI suggestions (breakdowns, estimates, planning) |
-| `forloopAiDeveloperSprint` | `sprintId: number, message?: string` | Trigger developer agent |
+| `forloopAiDeveloperSpaceSprint` | `sprintId: number, message?: string` | Trigger developer agent |
 | `forloopDeveloperStatus` | `sprintId?: number` | Check status of running developer task (SFN + story progress) |
 | `forloopAiAgentList` | _(none)_ | List available AI agents |
-| `forloopSprintAiAgentsUpdate` | `enabledAgentKeys: string[], sprintId?: number` | Enable/disable sprint agents |
+| `forloopSpaceSprintAiAgentsUpdate` | `enabledAgentKeys: string[], sprintId?: number` | Enable/disable sprint agents |
 | `forloopAgentHistory` | `sprintId?: number, limit?: number` | View opencode conversation history for sprint |
 | `forloopAgentClear` | `sprintId?: number, confirm?: boolean` | Clear conversation history |
 
 ### Tool Selection Guide
 
 - User info → `forloopUserProfile`, `forloopUserQuotas`
-- Sprint info → `forloopSprintList`, `forloopSprintGet`, `forloopDeveloperStatus` (check if developer task is running)
+- Sprint info → `forloopSpaceSprintList`, `forloopSpaceSprintGet`, `forloopDeveloperStatus` (check if developer task is running)
 - Story info → `forloopStoryGet` (use `includeComments=true` to read what developer agents implemented)
 - Organization info → `forloopOrganizationList`, `forloopOrganizationGet`
 - File info → `forloopFileList` (NOT ls commands)
 - Conversation history → `forloopAgentHistory` (load past opencode conversations for context)
 - Empty .forloop/ folder → Immediately call API tools, don't search
 
+### Sprint vs Sub-Sprint (Iteration)
+
+- **Create a new Sprint/Space** (`forloopSpaceSprintCreate`) when starting a completely new project/space — this creates a new GitHub repo.
+- **Create a new Iteration** (`forloopSubSprintCreate`) inside an EXISTING sprint when you need to time-box the next round of work. Sub-sprints share the sprint's GitHub repo, files, agents, and secrets. Never use `forloopSpaceSprintCreate` to add iterations to an existing sprint.
+
 ### When .forloop/ Folder Is Empty
 
 If `.forloop/manifest.json` doesn't exist or contains no active sprint:
 1. **DO NOT** keep searching folders
-2. **IMMEDIATELY** use `forloopSprintList` to get sprints from API
+2. **IMMEDIATELY** use `forloopSpaceSprintList` to get sprints from API
 3. **IMMEDIATELY** use `forloopUserProfile` to get user info from API
 4. Ask user to select/confirm sprint, then proceed
 
@@ -327,7 +336,7 @@ Every S3 upload must be linked to a doc_folder story. The pattern: **ensure → 
 14. **MANDATORY: Check Developer Task Status** — Call `forloopDeveloperStatus(sprintId={sprintId})` to check if a developer sprint is currently running (Step Functions execution). This tells you if the ECS developer task is alive, completed, or failed. If `hasActiveTask` is false, no task is running.
 15. **MANDATORY: Check Story Implementation Details** — For each story that is `done` or `in_progress`, call `forloopStoryGet(storyId={id}, includeComments=true)` to read developer comments.
 
-**If manifest missing or empty:** Stop searching. Call `forloopOrganizationList`, `forloopSprintList`, and `forloopUserProfile`. Ask user to select sprint. See Section 3 for details.
+**If manifest missing or empty:** Stop searching. Call `forloopOrganizationList`, `forloopSpaceSprintList`, and `forloopUserProfile`. Ask user to select sprint. See Section 3 for details.
 
 ### 1) Safety Boundary (Always Enforced)
 
@@ -344,7 +353,7 @@ Every S3 upload must be linked to a doc_folder story. The pattern: **ensure → 
 - **Already completed via forloop-context skill in Step 0**
 - Verify token (if missing, guide user to set it): `forloopTokenGet`
 - Confirm active sprint from loaded manifest or user selection
-- Get additional sprint context if needed: `forloopSprintGet(sprintId=<id>, includeStories=true, includeFiles=true)`
+- Get additional sprint context if needed: `forloopSpaceSprintGet(sprintId=<id>, includeStories=true, includeFiles=true)`
 
 Once sprint confirmed:
 - Summarize sprint title, dates, and key stories
@@ -361,8 +370,8 @@ If no sprint is selected/resolved, or the user does not confirm:
 4. Confirm the organization ID before proceeding
 
 Then ask: "Which sprint should we work on?" and present 3 options:
-- Choose existing sprint (list from `forloopSprintList`)
-- Create new sprint (ask for title, dates, project name; use `forloopSprintCreate` with the confirmed `organizationId`)
+- Choose existing sprint (list from `forloopSpaceSprintList`)
+- Create new sprint (ask for title, dates, project name; use `forloopSpaceSprintCreate` with the confirmed `organizationId`)
 - Continue without creating (discuss only)
 
 **When creating a new sprint:**
@@ -433,13 +442,13 @@ After plan created and user confirms:
 12. **Verify upload:** Call `forloopFileList(sprintId={sprintId})`
 
 **Verify stories created:**
-Call `forloopSprintGet(sprintId=<id>, includeStories=true)`
+Call `forloopSpaceSprintGet(sprintId=<id>, includeStories=true)`
 
 ### 7) Trigger Implementation on Server (Never Local)
 
 After tasks are created and user confirms execution, trigger implementation via ForLoop tools (never implement locally):
 
-- **To dispatch a developer task:** Use `forloopAiDeveloperSprint(sprintId={sprintId}, message="Implement the planned tasks")`
+- **To dispatch a developer task:** Use `forloopAiDeveloperSpaceSprint(sprintId={sprintId}, message="Implement the planned tasks")`
 - **To check task status:** Use `forloopDeveloperStatus(sprintId={sprintId})` to see if the developer task is still running and how many stories are done
 
 Never implement or edit code locally. All implementation runs on the ForLoop server via AWS serverless infrastructure.
@@ -514,7 +523,7 @@ Follow the **[Standard Operating Rules](#standard-operating-rules)** above, plus
 2. **Sync from S3** → call `forloopSyncAivyFolder` + `forloopSyncS3ToLocal`
 3. **Load conversations** → call `forloopAgentHistory(sprintId=14)` to check past discussions
 4. Verify token → `forloopTokenGet`
-5. **Get sprint details** → `forloopSprintGet(sprintId=14, includeStories=true)`
+5. **Get sprint details** → `forloopSpaceSprintGet(sprintId=14, includeStories=true)`
 6. **Capture knowledge** → knowledge-management, upload with doc_folder linking
 7. **Summarize and confirm:** present requirements, get explicit confirmation
 8. **Create plan** → plan-documentation, write to `~/.forloop/sprint-{sprintId}/plan/`, upload (see Doc Folder Management)
@@ -523,7 +532,7 @@ Follow the **[Standard Operating Rules](#standard-operating-rules)** above, plus
    - Confirm breakdown with user
    - Create stories via `forloopStoryTemplate`
    - Write task file to `~/.forloop/sprint-{sprintId}/task/`, upload (see Doc Folder Management)
-10. **Verify:** Call `forloopSprintGet(sprintId=14, includeStories=true)`
+10. **Verify:** Call `forloopSpaceSprintGet(sprintId=14, includeStories=true)`
 
 ---
 
@@ -535,7 +544,7 @@ Follow the **[Standard Operating Rules](#standard-operating-rules)** above, plus
 1. **Session start** → forloop-context (load context)
 2. **Check developer task** → call `forloopDeveloperStatus(sprintId={id})` to see if ECS task is running
 3. **Load conversations** → call `forloopAgentHistory` for recent discussions
-4. Get current sprint: Call `forloopSprintGet`
+4. Get current sprint: Call `forloopSpaceSprintGet`
 5. For each `done` or `in_progress` story, call `forloopStoryGet(storyId={id}, includeComments=true)` to get implementation details
 6. Summarize by status with implementation context from comments:
    - Completed: X stories (Y points) — [commit SHAs, test results from comments]

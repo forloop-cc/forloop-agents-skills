@@ -88,7 +88,7 @@ The four canonical agent keys used in ForLoop story assignment:
 
 At the start of planning session:
 1. Get the active sprint ID (from context, flag, or git branch)
-2. Fetch sprint details: `forloopSprintGet(sprintId=<id>)` — check `sprintAiAgents` array for enabled agents
+2. Fetch sprint details: `forloopSpaceSprintGet(sprintId=<id>)` — check `sprintAiAgents` array for enabled agents
 3. Check developer task status: `forloopDeveloperStatus(sprintId=<id>)` — if an ECS developer task is running, that agent is already occupied
 4. Store enabled and available agent keys in context
 
@@ -125,7 +125,7 @@ Priority: `forLoopTester` > `forLoopDevops` > `forLoopDeveloper` > `forLoopCreat
 ### Step 3: Enable Agent if Needed
 
 If the target agent is not enabled for the sprint:
-1. Call `forloopSprintAiAgentsUpdate(sprintId=<id>, enabledAgentKeys=[...])` with the agent key added
+1. Call `forloopSpaceSprintAiAgentsUpdate(sprintId=<id>, enabledAgentKeys=[...])` with the agent key added
 2. Wait for confirmation that agent is enabled
 
 ### Step 4: Create Story with Assignment
@@ -194,7 +194,7 @@ forloopAiAgentList()
 
 ### Enable Agents for Sprint
 ```
-forloopSprintAiAgentsUpdate(sprintId=<id>, enabledAgentKeys=["forLoopDeveloper","forLoopTester","forLoopDevops","forLoopCreator"])
+forloopSpaceSprintAiAgentsUpdate(sprintId=<id>, enabledAgentKeys=["forLoopDeveloper","forLoopTester","forLoopDevops","forLoopCreator"])
 ```
 
 ### Check Developer Availability
@@ -234,7 +234,7 @@ forloopStoryTemplate(
 |---|---------|--------------|
 | 1 | Assign without checking enabled agents | Fetch `sprintAiAgents` before assignment |
 | 2 | Hardcode agent keys without classification | Use keyword-based classification |
-| 3 | Assign to disabled agents without enabling first | Call `forloopSprintAiAgentsUpdate` first |
+| 3 | Assign to disabled agents without enabling first | Call `forloopSpaceSprintAiAgentsUpdate` first |
 | 4 | Use `user` assigneeType for agent tasks | Use `agent` assigneeType with `assigneeAgentKey` |
 | 5 | Leave ambiguous stories unassigned | Default to `forLoopDeveloper` for unclassified tasks |
 | 6 | Assign development tasks while ECS is running | Check `forloopDeveloperStatus` first |

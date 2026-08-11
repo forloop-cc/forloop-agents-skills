@@ -70,7 +70,7 @@ Always use these flags with every command:
 
 Parse responses:
 ```bash
-RESULT=$(forloop sprint get --output json --non-interactive 2>&1)
+RESULT=$(forloop space-sprint get --output json --non-interactive 2>&1)
 if [ $? -ne 0 ]; then
   echo "Error: $RESULT"
   exit 1
@@ -114,24 +114,24 @@ Never ask the user for their token — direct them to run the command above.
 
 ### List all sprints
 ```bash
-forloop sprint list --output json --non-interactive
+forloop space-sprint list --output json --non-interactive
 # Optional: filter by org or include system organization sprints
-forloop sprint list --org-id 2 --output json --non-interactive
-forloop sprint list --include-system-org --output json --non-interactive
+forloop space-sprint list --org-id 2 --output json --non-interactive
+forloop space-sprint list --include-system-org --output json --non-interactive
 ```
 Returns: `[{ "id": 14, "title": "...", "status": "active", ... }]`
 
 ### Get sprint details
 ```bash
-forloop sprint get --output json --non-interactive               # auto-detects sprint
-forloop sprint get --id 14 --output json --non-interactive       # explicit
-forloop sprint get --id 14 --no-files --output json --non-interactive  # stories only
+forloop space-sprint get --output json --non-interactive               # auto-detects sprint
+forloop space-sprint get --id 14 --output json --non-interactive       # explicit
+forloop space-sprint get --id 14 --no-files --output json --non-interactive  # stories only
 ```
 Returns sprint with title, status, dates, and embedded stories array. Stories and files included by default.
 
 ### Create a sprint
 ```bash
-forloop sprint create \
+forloop space-sprint create \
   --title "Sprint 15: API Redesign" \
   --start-date 2026-06-15 \
   --end-date 2026-06-28 \
@@ -146,13 +146,13 @@ Returns: `{ "id": 15, "title": "...", ... }`
 
 ### Update a sprint
 ```bash
-forloop sprint update --id 14 --title "Updated Title" --output json --non-interactive
+forloop space-sprint update --id 14 --title "Updated Title" --output json --non-interactive
 # Partial updates: only pass flags you want to change
 ```
 
 ### Delete a sprint (with confirmation)
 ```bash
-forloop sprint delete --id 14 --confirm --output json --non-interactive
+forloop space-sprint delete --id 14 --confirm --output json --non-interactive
 ```
 Requires `--confirm`. Warn the user before running this.
 
@@ -161,7 +161,7 @@ Requires `--confirm`. Warn the user before running this.
 ## Story Commands
 
 ### List stories (via sprint get)
-Stories are embedded in sprint output. Use `forloop sprint get --output json` to get all stories.
+Stories are embedded in sprint output. Use `forloop space-sprint get --output json` to get all stories.
 
 ### Create a story from a template (basic-task or basic-note)
 ```bash
@@ -347,7 +347,7 @@ forloop sync aivy-folder --output json --non-interactive
 forloop sync s3-to-local --output json --non-interactive
 
 # 3. Load sprint context
-forloop sprint get --output json --non-interactive | jq '.stories'
+forloop space-sprint get --output json --non-interactive | jq '.stories'
 ```
 
 ### Sprint creation pattern
@@ -356,10 +356,10 @@ forloop sprint get --output json --non-interactive | jq '.stories'
 forloop org list --output json --non-interactive | jq '.[].id'
 
 # 2. Create sprint
-forloop sprint create --title "..." --start-date YYYY-MM-DD --end-date YYYY-MM-DD --org-id N --output json --non-interactive
+forloop space-sprint create --title "..." --start-date YYYY-MM-DD --end-date YYYY-MM-DD --org-id N --output json --non-interactive
 
 # 3. Verify
-forloop sprint get --output json --non-interactive | jq '{id, title, startDate}'
+forloop space-sprint get --output json --non-interactive | jq '{id, title, startDate}'
 ```
 
 ### Story creation pattern
@@ -372,7 +372,7 @@ DOC_ID=$(forloop sync aivy-doc-get --output json --non-interactive | jq -r '.doc
 forloop story create --title "..." --type basic-task --sprint N --priority medium --points 3 --output json --non-interactive
 
 # 3. Verify
-forloop sprint get --output json --non-interactive | jq '.stories[] | {id, title, status}'
+forloop space-sprint get --output json --non-interactive | jq '.stories[] | {id, title, status}'
 ```
 
 ### Upload workflow

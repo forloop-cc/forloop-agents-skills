@@ -145,7 +145,7 @@ forloopOrganizationCreate(name="New Team")
 forloopUserQuotas()
 
 # If remaining > 0, proceed
-forloopSprintCreate(title="Sprint 43", startDate=...)
+forloopSpaceSprintCreate(title="Sprint 43", startDate=...)
 ```
 
 ---
@@ -473,7 +473,7 @@ forloopOrganizationCreate(
 | 2 | Delete organization without `--confirm true` | Explicit confirmation required |
 | 3 | Update organization without owner permission | Check role via `forloopOrganizationList` |
 | 4 | Assume tier allows operation | Verify tier (free/team/enterprise) limits |
-| 5 | Create sprint without checking sprint quota | Check `forloopUserQuotas` before `forloopSprintCreate` |
+| 5 | Create sprint without checking sprint quota | Check `forloopUserQuotas` before `forloopSpaceSprintCreate` |
 
 ## Quality Gates
 

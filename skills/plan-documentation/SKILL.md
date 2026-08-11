@@ -400,7 +400,7 @@ chmod 755 .forloop/plan
 **Check:**
 ```
 forloopTokenGet()
-forloopSprintGet(sprintId={id})
+forloopSpaceSprintGet(sprintId={id})
 ```
 
 ### Issue: Manifest missing

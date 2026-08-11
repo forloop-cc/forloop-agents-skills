@@ -245,7 +245,7 @@ If the user is not connected to any sprint yet, skip sync and proceed with norma
 If a sprint is active, fetch the enabled AI agents for the sprint:
 
 ```
-forloopSprintGet(sprintId=<activeSprintId>)
+forloopSpaceSprintGet(sprintId=<activeSprintId>)
 ```
 
 **Store in context:**
@@ -254,13 +254,13 @@ forloopSprintGet(sprintId=<activeSprintId>)
 
 This enables the planner agent to:
 1. Know which agents are available for story assignment
-2. Enable missing agents if needed via `forloopSprintAiAgentsUpdate`
+2. Enable missing agents if needed via `forloopSpaceSprintAiAgentsUpdate`
 3. Auto-assign stories correctly using the agent-auto-assignment skill
 
 If the sprint has no agents enabled, enable all four canonical agents:
 
 ```
-forloopSprintAiAgentsUpdate(sprintId=<id>, enabledAgentKeys=["forLoopDeveloper","forLoopTester","forLoopDevops","forLoopCreator"])
+forloopSpaceSprintAiAgentsUpdate(sprintId=<id>, enabledAgentKeys=["forLoopDeveloper","forLoopTester","forLoopDevops","forLoopCreator"])
 ```
 
 ### Step 10: Check Developer Task Status (Required)
@@ -504,7 +504,7 @@ Options:
 | 3 | Assume manifest is always valid | Validate manifest structure, fall back to folder scan |
 | 4 | Start work without presenting context summary | Always present summary and ask for direction |
 | 5 | Skip S3 sync after context load | Run `forloopSyncS3ToLocal` if sprint is active |
-| 6 | Skip fetching enabled AI agents | Run `forloopSprintGet` to get `sprintAiAgents` |
+| 6 | Skip fetching enabled AI agents | Run `forloopSpaceSprintGet` to get `sprintAiAgents` |
 
 ## Quality Gates
 

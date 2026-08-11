@@ -157,7 +157,7 @@ forloopTemplateList()
 
 ### Verify story created
 ```
-forloopSprintGet(sprintId=<id>, includeStories=true)
+forloopSpaceSprintGet(sprintId=<id>, includeStories=true)
 ```
 
 ## INVEST Checklist

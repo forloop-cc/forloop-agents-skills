@@ -38,11 +38,11 @@ This skill enables all ForLoop operations via plugin tools. The forLoopPlanner a
 - `forloopOrganizationDelete` — Delete org permanently. Args: `organizationId: number`, `confirm?: boolean` (default: `false`).
 
 ### Sprint Management
-- `forloopSprintList` — List all accessible sprints. Args: `organizationId?: number`, `includeSystemOrg?: boolean` (default: `true`).
-- `forloopSprintGet` — Get sprint details. Args: `sprintId?: number` (auto-detected), `includeStories?: boolean` (default: `true`), `includeFiles?: boolean` (default: `true`).
-- `forloopSprintCreate` — Create new sprint. Args: `title: string`, `startDate: string` (ISO YYYY-MM-DD), `endDate: string` (ISO), `description?: string`, `isPrivate?: boolean`, `organizationId?: number`.
-- `forloopSprintUpdate` — Update sprint fields. Args: `sprintId: number`, plus any of `title`, `description`, `startDate`, `endDate`, `isPrivate`.
-- `forloopSprintDelete` — Delete sprint and all stories. Args: `sprintId: number`, `confirm?: boolean` (default: `false`).
+- `forloopSpaceSprintList` — List all accessible sprints. Args: `organizationId?: number`, `includeSystemOrg?: boolean` (default: `true`).
+- `forloopSpaceSprintGet` — Get sprint details. Args: `sprintId?: number` (auto-detected), `includeStories?: boolean` (default: `true`), `includeFiles?: boolean` (default: `true`).
+- `forloopSpaceSprintCreate` — Create new sprint. Args: `title: string`, `startDate: string` (ISO YYYY-MM-DD), `endDate: string` (ISO), `description?: string`, `isPrivate?: boolean`, `organizationId?: number`.
+- `forloopSpaceSprintUpdate` — Update sprint fields. Args: `sprintId: number`, plus any of `title`, `description`, `startDate`, `endDate`, `isPrivate`.
+- `forloopSpaceSprintDelete` — Delete sprint and all stories. Args: `sprintId: number`, `confirm?: boolean` (default: `false`).
 
 ### Sub-Sprint (Iteration) Tools
 
@@ -86,10 +86,10 @@ This skill enables all ForLoop operations via plugin tools. The forLoopPlanner a
 ### AI Agent Integration
 - `forloopAgentQuery` — Send natural language query to AI agent. Args: `query: string`, `agentKey?: string` (default: `"forLoopTaskSupervisor"`), `sprintId?: number`, `enableMutations?: boolean` (default: `false`).
 - `forloopAgentSuggest` — Get AI suggestions. Args: `type: string` (`"breakdown"`/`"estimate"`/`"acceptance_criteria"`/`"test_cases"`/`"related"`/`"sprint_planning"`), `sprintId?: number`, `storyId?: number`, `query?: string`.
-- `forloopAiDeveloperSprint` — Trigger developer agent via Step Functions. Args: `sprintId: number`, `message?: string`.
+- `forloopAiDeveloperSpaceSprint` — Trigger developer agent via Step Functions. Args: `sprintId: number`, `message?: string`.
 - `forloopDeveloperStatus` — Check running developer task. Args: `sprintId?: number`. Returns SFN status, elapsed time, branch, story progress (done/in-progress/total), errors.
 - `forloopAiAgentList` — List available AI agents. No args.
-- `forloopSprintAiAgentsUpdate` — Enable/disable agents for sprint. Args: `enabledAgentKeys: string[]`, `sprintId?: number`.
+- `forloopSpaceSprintAiAgentsUpdate` — Enable/disable agents for sprint. Args: `enabledAgentKeys: string[]`, `sprintId?: number`.
 - `forloopAgentHistory` — View conversation history. Args: `sprintId?: number`, `limit?: number` (1-200, default: 50).
 - `forloopAgentClear` — Clear conversation history. Args: `sprintId?: number`, `confirm?: boolean` (default: `false`).
 
@@ -129,7 +129,7 @@ The plugin auto-detects sprint context from:
 forloopTokenGet()                                         → verify auth
 forloopSyncAivyFolder(sprintId=N)                         → ensure doc_folder
 forloopSyncS3ToLocal(sprintId=N)                          → pull latest files
-forloopSprintGet(sprintId=N, includeStories=true)         → load sprint context
+forloopSpaceSprintGet(sprintId=N, includeStories=true)         → load sprint context
 forloopAgentHistory(sprintId=N, limit=50)                 → load conversation history
 forloopDeveloperStatus(sprintId=N)                        → check if developer running
 forloopStoryGet(storyId=<each-done>, includeComments=true)→ read developer comments
@@ -138,7 +138,7 @@ forloopStoryGet(storyId=<each-done>, includeComments=true)→ read developer com
 ### Sprint Creation
 ```
 forloopOrganizationList()                                 → check orgs
-forloopSprintCreate(title="...", startDate="...", endDate="...", organizationId=N)
+forloopSpaceSprintCreate(title="...", startDate="...", endDate="...", organizationId=N)
 ```
 
 ### Story Creation (Always Use Template)
@@ -168,7 +168,7 @@ forloopFileList(sprintId=N)                               → verify
 
 ### Trigger Development
 ```
-forloopAiDeveloperSprint(sprintId=N, message="Implement all stories")
+forloopAiDeveloperSpaceSprint(sprintId=N, message="Implement all stories")
 forloopDeveloperStatus(sprintId=N)                        → check progress
 ```
 
@@ -176,13 +176,13 @@ forloopDeveloperStatus(sprintId=N)                        → check progress
 
 ### List sprints
 ```
-forloopSprintList()
-forloopSprintList(organizationId=2)
+forloopSpaceSprintList()
+forloopSpaceSprintList(organizationId=2)
 ```
 
 ### Get sprint with stories
 ```
-forloopSprintGet(sprintId=123, includeStories=true, includeFiles=true)
+forloopSpaceSprintGet(sprintId=123, includeStories=true, includeFiles=true)
 ```
 
 ### Create an implementation story (with template)

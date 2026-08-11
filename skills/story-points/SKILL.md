@@ -98,7 +98,7 @@ digraph estimation {
 
 ### Get stories for estimation
 ```
-forloopSprintGet(sprintId=<id>, includeStories=true)
+forloopSpaceSprintGet(sprintId=<id>, includeStories=true)
 ```
 
 ### Update story with points

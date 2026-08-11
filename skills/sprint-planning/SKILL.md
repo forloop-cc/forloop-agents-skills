@@ -39,7 +39,7 @@ When a sprint is created with a project name, a GitHub repo `sprint-{id}-project
 
 The organization ID must be:
 - Stored in `~/.forloop/manifest.json` as `activeOrganizationId`
-- Passed to `forloopSprintCreate` as the `organizationId` parameter
+- Passed to `forloopSpaceSprintCreate` as the `organizationId` parameter
 - Written to the project's `forloop.json` as `organizationId`
 
 **Never create a sprint without a confirmed organization ID.**
@@ -77,10 +77,10 @@ digraph sprint_planning {
     "Org confirmed?" -> "Check existing sprints" [label="yes"];
     "Org confirmed?" -> "Create/Select org" [label="no"];
     "Create/Select org" -> "Check existing sprints";
-    "Check existing sprints" -> "Active sprint exists?" [label="forloopSprintList"];
+    "Check existing sprints" -> "Active sprint exists?" [label="forloopSpaceSprintList"];
     "Active sprint exists?" -> "Get sprint details" [label="yes"];
     "Active sprint exists?" -> "Create new sprint" [label="no"];
-    "Create new sprint" -> "Get sprint details" [label="forloopSprintGet"];
+    "Create new sprint" -> "Get sprint details" [label="forloopSpaceSprintGet"];
     "Get sprint details" -> "Gather requirements";
     "Gather requirements" -> "Capture knowledge" [label="knowledge-management"];
     "Capture knowledge" -> "Create plan doc" [label="plan-documentation"];
@@ -182,12 +182,12 @@ When discussing sprint capacity, present 2-3 approaches:
 
 ### List existing sprints
 ```
-forloopSprintList()
+forloopSpaceSprintList()
 ```
 
 ### Get sprint details
 ```
-forloopSprintGet(sprintId=<id>)
+forloopSpaceSprintGet(sprintId=<id>)
 ```
 
 ### Add stories to sprint

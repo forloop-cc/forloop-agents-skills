@@ -272,7 +272,7 @@ Stories from other templates (doc-folder, basic-note, schedule-meeting) remain s
 and are always visible regardless of the active iteration.
 
 **BEFORE claiming complete:**
-1. Run: `forloopSprintGet(sprintId={sprintId}, includeStories=true)`
+1. Run: `forloopSpaceSprintGet(sprintId={sprintId}, includeStories=true)`
 2. Verify: All story IDs appear in response
 3. Verify: Each story has `points` field populated
 4. Verify: Each story has correct `assigneeAgentKey`
@@ -374,7 +374,7 @@ forloopSyncLocalToS3(
 
 **If you catch yourself:**
 - Expressing satisfaction before verification ("Great!", "Perfect!", "Done!")
-- About to claim stories created without running `forloopSprintGet(sprintId={sprintId}, includeStories=true)`
+- About to claim stories created without running `forloopSpaceSprintGet(sprintId={sprintId}, includeStories=true)`
 - About to claim task uploaded without running `forloopFileList`
 - Thinking "just this once" skip verification
 - Tool returned success but you haven't verified
@@ -419,7 +419,7 @@ forloopSyncLocalToS3(
    - `--assigneeAgentKey` set based on task type
 7. Verify stories created with points and agents:
    ```
-   forloopSprintGet(sprintId=14, includeStories=true)
+   forloopSpaceSprintGet(sprintId=14, includeStories=true)
    ```
 8. Write: `.forloop/sprint-{sprintId}/task/task-14-20260410-100000.md`
 9. Update manifest
@@ -492,7 +492,7 @@ This enables logical grouping of all ForLoop-generated documents.
 **Check:**
 ```
 forloopTokenGet()
-forloopSprintGet(sprintId={id})
+forloopSpaceSprintGet(sprintId={id})
 forloopTemplateList()
 ```
 
@@ -512,8 +512,8 @@ Always call story-points skill before story creation. If estimation fails, use d
 ### Issue: Agent not assigned to story
 
 **Check:**
-1. Is the agent enabled for the sprint? Run: `forloopSprintGet(sprintId={id})`
-2. If not enabled, run: `forloopSprintAiAgentsUpdate(sprintId={id}, enabledAgentKeys=["forLoopDeveloper","forLoopTester","forLoopDevops","forLoopCreator"])`
+1. Is the agent enabled for the sprint? Run: `forloopSpaceSprintGet(sprintId={id})`
+2. If not enabled, run: `forloopSpaceSprintAiAgentsUpdate(sprintId={id}, enabledAgentKeys=["forLoopDeveloper","forLoopTester","forLoopDevops","forLoopCreator"])`
 3. Use `agent-auto-assignment` skill to determine correct agent
 
 ### Issue: S3 upload in wrong folder
@@ -564,7 +564,7 @@ Always call story-points skill before story creation. If estimation fails, use d
 | 5 | Upload task file to wrong S3 folder | Use `folder=project/tasks` |
 | 6 | Skip doc_folder linking | Link to doc_folder story for organization |
 | 7 | Skip manifest update | Always update `~/.forloop/manifest.json` with v2 format |
-| 8 | Skip verification after story creation | Run `forloopSprintGet(sprintId={sprintId}, includeStories=true)` |
+| 8 | Skip verification after story creation | Run `forloopSpaceSprintGet(sprintId={sprintId}, includeStories=true)` |
 | 9 | Create task stories without `templateSlug=basic-task` | ALWAYS use `templateSlug=basic-task` for all task breakdown stories |
 
 ## Quality Gates
@@ -578,7 +578,7 @@ Always call story-points skill before story creation. If estimation fails, use d
 - [ ] Agent assignment determined per task type (forLoopDeveloper/forLoopTester/forLoopDevops/forLoopCreator)
 - [ ] User confirmed breakdown before creation
 - [ ] Stories created via `forloopStoryTemplate`
-- [ ] Story IDs verified via `forloopSprintGet(sprintId={sprintId}, includeStories=true)`
+- [ ] Story IDs verified via `forloopSpaceSprintGet(sprintId={sprintId}, includeStories=true)`
 - [ ] Story implementation details checked: `forloopStoryGet(storyId={id}, includeComments=true)` for done/in-progress stories
 - [ ] Each story has `points` field populated
 - [ ] Each story has correct `assigneeAgentKey`
@@ -590,7 +590,7 @@ Always call story-points skill before story creation. If estimation fails, use d
 
 | Excuse | Reality |
 |--------|---------|
-| "Skip verification, tool returned IDs" | Verify stories exist with forloopSprintGet |
+| "Skip verification, tool returned IDs" | Verify stories exist with forloopSpaceSprintGet |
 | "User already confirmed the breakdown" | User confirmation ≠ technical verification |
 | "Just these few stories, don't need full process" | Simple tasks need process too |
 | "I'll upload the task file later" | Later never comes - upload immediately |

@@ -51,7 +51,7 @@ All ForLoop operations use bash with the `forloop` binary. Always include:
 
 Parse responses with `jq`. Example:
 ```bash
-SPRINTS=$(forloop sprint list --output json --non-interactive)
+SPRINTS=$(forloop space-sprint list --output json --non-interactive)
 echo "$SPRINTS" | jq '.[].id'              # array of IDs
 echo "$SPRINTS" | jq -r '.[0].title'       # first title
 echo "$SPRINTS" | jq 'length'              # count
@@ -209,7 +209,7 @@ Load skills: `tech-stack-default` → `forloop-context`
    ```bash
    forloop agent developer-status --output json --non-interactive
    ```
-7. **Check done/in-progress stories** — use `forloop sprint get --output json` and read comments:
+7. **Check done/in-progress stories** — use `forloop space-sprint get --output json` and read comments:
    ```bash
    forloop story get --id STORY_ID --output json --non-interactive
    ```
@@ -226,15 +226,15 @@ Load skills: `tech-stack-default` → `forloop-context`
 ### 2) Context Discovery
 
 - Verify auth: `forloop auth status --non-interactive`
-- Get sprint details: `forloop sprint get --output json --non-interactive | jq '{id, title, stories}'`
+- Get sprint details: `forloop space-sprint get --output json --non-interactive | jq '{id, title, stories}'`
 - Confirm: "Working on sprint #<id>?"
 
 ### 3) Sprint Selection (If Missing)
 
 1. Check orgs: `forloop org list --output json --non-interactive`
 2. If no org, guide user to create one
-3. List sprints: `forloop sprint list --output json --non-interactive`
-4. Or create: `forloop sprint create --title "Sprint N" --start-date YYYY-MM-DD --end-date YYYY-MM-DD --org-id N --output json --non-interactive`
+3. List sprints: `forloop space-sprint list --output json --non-interactive`
+4. Or create: `forloop space-sprint create --title "Sprint N" --start-date YYYY-MM-DD --end-date YYYY-MM-DD --org-id N --output json --non-interactive`
 
 ### 4) Requirements Gathering + Knowledge Capture
 
