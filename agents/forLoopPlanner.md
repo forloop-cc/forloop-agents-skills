@@ -48,13 +48,13 @@ All ForLoop tools are invoked as **structured function calls**, NOT as CLI comma
 | `forloopOrganizationList` | `ownedOnly?: boolean` | List all organizations |
 | `forloopOrganizationGet` | `organizationId: number` | Get organization details |
 | `forloopOrganizationCreate` | `name: string, description?: string` | Create new organization |
-| `forloopSpaceSprintList` | `organizationId?: number, includeSystemOrg?: boolean` | List accessible sprints |
-| `forloopSpaceSprintGet` | `sprintId?: number, includeStories?: boolean, includeFiles?: boolean` | Get sprint details |
-| `forloopSpaceSprintCreate` | `title: string, startDate: string, endDate: string, organizationId?: number` | Create new sprint |
-| `forloopSpaceSprintUpdate` | `sprintId: number` + fields to update | Update sprint details |
-| `forloopSpaceSprintDelete` | `sprintId: number, confirm?: boolean` | Delete sprint |
+| `forloopSpaceSprintList` | `organizationId?: number, includeSystemOrg?: boolean` | List accessible spaces |
+| `forloopSpaceSprintGet` | `sprintId?: number, includeStories?: boolean, includeFiles?: boolean` | Get space details |
+| `forloopSpaceSprintCreate` | `title: string, startDate: string, endDate: string, organizationId?: number` | Create new space |
+| `forloopSpaceSprintUpdate` | `sprintId: number` + fields to update | Update space details |
+| `forloopSpaceSprintDelete` | `sprintId: number, confirm?: boolean` | Delete space |
 | `forloopSubSprintList` | `sprintId?: number` | List iterations (sub-sprints) for a sprint |
-| `forloopSubSprintCreate` | `sprintId?: number, title?: string, startDate: string, endDate: string` | Create a new iteration. Previously active iteration is auto-completed. Use INSTEAD of `forloopSpaceSprintCreate` when adding iterations to an EXISTING sprint. |
+| `forloopSubSprintCreate` | `sprintId?: number, title?: string, startDate: string, endDate: string` | Create a new iteration. Previously active iteration is auto-completed. Use INSTEAD of `forloopSpaceSprintCreate` when adding iterations to an EXISTING space. |
 | `forloopSubSprintUpdate` | `subSprintId: number, title?: string, startDate?: string, endDate?: string, status?: string` | Update iteration title, dates, or status |
 | `forloopSubSprintDelete` | `subSprintId: number` | Soft-delete an iteration |
 | `forloopStoryTemplate` | `templateSlug: string, taskTitle: string, sprintId?: number, description?: string, priority?: string, points?: number, assigneeAgentKey?: string` | Create story from template |
@@ -75,14 +75,14 @@ All ForLoop tools are invoked as **structured function calls**, NOT as CLI comma
 | `forloopAiDeveloperSpaceSprint` | `sprintId: number, message?: string` | Trigger developer agent |
 | `forloopDeveloperStatus` | `sprintId?: number` | Check status of running developer task (SFN + story progress) |
 | `forloopAiAgentList` | _(none)_ | List available AI agents |
-| `forloopSpaceSprintAiAgentsUpdate` | `enabledAgentKeys: string[], sprintId?: number` | Enable/disable sprint agents |
+| `forloopSpaceSprintAiAgentsUpdate` | `enabledAgentKeys: string[], sprintId?: number` | Enable/disable agents for a space |
 | `forloopAgentHistory` | `sprintId?: number, limit?: number` | View opencode conversation history for sprint |
 | `forloopAgentClear` | `sprintId?: number, confirm?: boolean` | Clear conversation history |
 
 ### Tool Selection Guide
 
 - User info → `forloopUserProfile`, `forloopUserQuotas`
-- Sprint info → `forloopSpaceSprintList`, `forloopSpaceSprintGet`, `forloopDeveloperStatus` (check if developer task is running)
+- Sprint/Space info → `forloopSpaceSprintList`, `forloopSpaceSprintGet`, `forloopDeveloperStatus` (check if developer task is running)
 - Story info → `forloopStoryGet` (use `includeComments=true` to read what developer agents implemented)
 - Organization info → `forloopOrganizationList`, `forloopOrganizationGet`
 - File info → `forloopFileList` (NOT ls commands)
@@ -91,14 +91,14 @@ All ForLoop tools are invoked as **structured function calls**, NOT as CLI comma
 
 ### Sprint vs Sub-Sprint (Iteration)
 
-- **Create a new Sprint/Space** (`forloopSpaceSprintCreate`) when starting a completely new project/space — this creates a new GitHub repo.
-- **Create a new Iteration** (`forloopSubSprintCreate`) inside an EXISTING sprint when you need to time-box the next round of work. Sub-sprints share the sprint's GitHub repo, files, agents, and secrets. Never use `forloopSpaceSprintCreate` to add iterations to an existing sprint.
+- **Create a new Space** (`forloopSpaceSprintCreate`) when starting a completely new project/space — this creates a new GitHub repo.
+- **Create a new Iteration** (`forloopSubSprintCreate`) inside an EXISTING space when you need to time-box the next round of work. Sub-sprints share the space's GitHub repo, files, agents, and secrets. Never use `forloopSpaceSprintCreate` to add iterations to an existing space.
 
 ### When .forloop/ Folder Is Empty
 
 If `.forloop/manifest.json` doesn't exist or contains no active sprint:
 1. **DO NOT** keep searching folders
-2. **IMMEDIATELY** use `forloopSpaceSprintList` to get sprints from API
+2. **IMMEDIATELY** use `forloopSpaceSprintList` to get spaces from API
 3. **IMMEDIATELY** use `forloopUserProfile` to get user info from API
 4. Ask user to select/confirm sprint, then proceed
 

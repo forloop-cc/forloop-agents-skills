@@ -38,11 +38,11 @@ This skill enables all ForLoop operations via plugin tools. The forLoopPlanner a
 - `forloopOrganizationDelete` — Delete org permanently. Args: `organizationId: number`, `confirm?: boolean` (default: `false`).
 
 ### Sprint Management
-- `forloopSpaceSprintList` — List all accessible sprints. Args: `organizationId?: number`, `includeSystemOrg?: boolean` (default: `true`).
-- `forloopSpaceSprintGet` — Get sprint details. Args: `sprintId?: number` (auto-detected), `includeStories?: boolean` (default: `true`), `includeFiles?: boolean` (default: `true`).
-- `forloopSpaceSprintCreate` — Create new sprint. Args: `title: string`, `startDate: string` (ISO YYYY-MM-DD), `endDate: string` (ISO), `description?: string`, `isPrivate?: boolean`, `organizationId?: number`.
-- `forloopSpaceSprintUpdate` — Update sprint fields. Args: `sprintId: number`, plus any of `title`, `description`, `startDate`, `endDate`, `isPrivate`.
-- `forloopSpaceSprintDelete` — Delete sprint and all stories. Args: `sprintId: number`, `confirm?: boolean` (default: `false`).
+- `forloopSpaceSprintList` — List all accessible spaces. Args: `organizationId?: number`, `includeSystemOrg?: boolean` (default: `true`).
+- `forloopSpaceSprintGet` — Get space details. Args: `sprintId?: number` (auto-detected), `includeStories?: boolean` (default: `true`), `includeFiles?: boolean` (default: `true`).
+- `forloopSpaceSprintCreate` — Create new space. Args: `title: string`, `startDate: string` (ISO YYYY-MM-DD), `endDate: string` (ISO), `description?: string`, `isPrivate?: boolean`, `organizationId?: number`.
+- `forloopSpaceSprintUpdate` — Update space fields. Args: `sprintId: number`, plus any of `title`, `description`, `startDate`, `endDate`, `isPrivate`.
+- `forloopSpaceSprintDelete` — Delete space and all stories. Args: `sprintId: number`, `confirm?: boolean` (default: `false`).
 
 ### Sub-Sprint (Iteration) Tools
 
@@ -89,7 +89,7 @@ This skill enables all ForLoop operations via plugin tools. The forLoopPlanner a
 - `forloopAiDeveloperSpaceSprint` — Trigger developer agent via Step Functions. Args: `sprintId: number`, `message?: string`.
 - `forloopDeveloperStatus` — Check running developer task. Args: `sprintId?: number`. Returns SFN status, elapsed time, branch, story progress (done/in-progress/total), errors.
 - `forloopAiAgentList` — List available AI agents. No args.
-- `forloopSpaceSprintAiAgentsUpdate` — Enable/disable agents for sprint. Args: `enabledAgentKeys: string[]`, `sprintId?: number`.
+- `forloopSpaceSprintAiAgentsUpdate` — Enable/disable agents for a space. Args: `enabledAgentKeys: string[]`, `sprintId?: number`.
 - `forloopAgentHistory` — View conversation history. Args: `sprintId?: number`, `limit?: number` (1-200, default: 50).
 - `forloopAgentClear` — Clear conversation history. Args: `sprintId?: number`, `confirm?: boolean` (default: `false`).
 
