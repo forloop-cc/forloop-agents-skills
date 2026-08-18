@@ -3,7 +3,7 @@ name: forloop-context
 description: >
   Use at session start to load context from .forloop/ folder.
   ALWAYS executed first on every new agent session. Loads knowledge, plans,
-  and tasks for continuity. Resolves sprint ID from manifest, env var, or git branch.
+  and tasks for continuity. Resolves space ID from manifest, env var, or git branch.
   DO NOT use when: mid-session (context already loaded), or when no
   .forloop/ folder exists and user doesn't want one created.
 license: MIT
@@ -13,7 +13,7 @@ metadata:
   sources:
     - ForLoop context management documentation
 storage: ~/.forloop/
-triggers: ["session start", "load context", "check sprint", "context loading"]
+triggers: ["session start", "load context", "check space", "context loading"]
 integrations: []
 ---
 
@@ -68,18 +68,18 @@ digraph session_startup {
 ### Step 1: Resolve Context Directory
 
 The manifest is always at `~/.forloop/manifest.json`.
-Sprint files are at `~/.forloop/sprint-{sprintId}/`.
+Space files are at `~/.forloop/sprint-{sprintId}/`.
 
 1. Check `~/.forloop/manifest.json` for `activeSprintId`
-2. If manifest has active sprint, use `~/.forloop/sprint-{activeSprintId}/`
-3. If no sprint selected, work at `~/.forloop/` root only
+2. If manifest has active space, use `~/.forloop/sprint-{activeSprintId}/`
+3. If no space selected, work at `~/.forloop/` root only
 
 If `~/.forloop/` doesn't exist, create it.
 
 **Outcomes:**
 
-- **Manifest exists with active sprint:** Load from `~/.forloop/sprint-{id}/`
-- **Manifest exists, no sprint:** Create structure, inform user of fresh start
+- **Manifest exists with active space:** Load from `~/.forloop/sprint-{id}/`
+- **Manifest exists, no space:** Create structure, inform user of fresh start
 - **No manifest:** Create `~/.forloop/` and manifest, inform user of fresh start
 
 ### Step 2: Check Manifest
@@ -124,9 +124,9 @@ Read `manifest.json` from the resolved context directory.
 
 If manifest is missing/invalid, scan:
 
-- `sprint-{id}/knowledge/` (latest 3) if sprint is known
-- `sprint-{id}/plan/` (latest 1) if sprint is known
-- `sprint-{id}/task/` (latest 1) if sprint is known
+- `sprint-{id}/knowledge/` (latest 3) if space is known
+- `sprint-{id}/plan/` (latest 1) if space is known
+- `sprint-{id}/task/` (latest 1) if space is known
 
 ### Step 4: Load Recent Files
 
@@ -138,7 +138,7 @@ If manifest is missing/invalid, scan:
 
 **Extract:**
 
-- Sprint IDs
+- Space IDs
 - Story IDs
 - Progress status
 - Open questions
@@ -159,7 +159,7 @@ If manifest is missing/invalid, scan:
 ### Plans
 - {N} plan files
 - Active: plan-{sprintId}-{datetime}.md
-- Sprint: #{sprintId}
+- Space: #{sprintId}
 
 ### Tasks
 - {N} task files
@@ -184,7 +184,7 @@ If manifest is missing/invalid, scan:
 
 📋 Plans (2 files)
 ├─ plan-14-20260410-093015.md (active)
-│  Sprint: #14 | Goal: Auth System
+│  Space: #14 | Goal: Auth System
 │  Dates: Apr 10 - Apr 24
 └─ plan-13-20260405-084500.md
 
@@ -196,9 +196,9 @@ If manifest is missing/invalid, scan:
 
 ═══════════════════════════════════════
 
-📊 Current Sprint Summary
+📊 Current Space Summary
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Sprint: #14 "Authentication System"
+Space: #14 "Authentication System"
 Timeline: Apr 10 - Apr 24 (14 days)
 Progress: 2/5 stories complete (40%)
 Points: 10/21 completed
@@ -215,34 +215,34 @@ Stories:
 
 How would you like to proceed?
 
-1. Continue with current sprint
+1. Continue with current space
 2. Review/modify tasks
-3. Create new sprint plan
+3. Create new space plan
 4. Something else
 ```
 
 ### Step 7: Aivy Doc Sync (Required)
 
-If a working sprint is available (via `~/.forloop/manifest.json`, `FORLOOP_SPRINT_ID`, or git branch `sprint-XXX`), always run:
+If a working space is available (via `~/.forloop/manifest.json`, `FORLOOP_SPRINT_ID`, or git branch `sprint-XXX`), always run:
 
 ```
 forloopSyncAivyFolder(sprintId={sprintId})
 forloopSyncS3ToLocal(sprintId={sprintId})
 ```
 
-If the user is not connected to any sprint yet, skip sync and proceed with normal onboarding.
+If the user is not connected to any space yet, skip sync and proceed with normal onboarding.
 
 ### Step 8: Fetch Iteration Information
 
-5. **Fetch Iteration Information**: Call `forloopSubSprintList` for the active sprint to discover all iterations.
+5. **Fetch Iteration Information**: Call `forloopSubSprintList` for the active space to discover all iterations.
    - Identify the active iteration (status: in_progress)
    - Note how many total iterations exist
-   - Report: "Sprint '<name>' has <N> iteration(s). Active: <title> (<startDate> – <endDate>)"
-   - If no active sub-sprint exists (legacy sprint with no iterations), note: "No iterations defined yet. All stories are shown."
+   - Report: "Space '<name>' has <N> iteration(s). Active: <title> (<startDate> – <endDate>)"
+   - If no active iteration exists (legacy space with no iterations), note: "No iterations defined yet. All stories are shown."
 
 ### Step 9: Fetch Enabled AI Agents (Required)
 
-If a sprint is active, fetch the enabled AI agents for the sprint:
+If a space is active, fetch the enabled AI agents for the space:
 
 ```
 forloopSpaceSprintGet(sprintId=<activeSprintId>)
@@ -257,7 +257,7 @@ This enables the planner agent to:
 2. Enable missing agents if needed via `forloopSpaceSprintAiAgentsUpdate`
 3. Auto-assign stories correctly using the agent-auto-assignment skill
 
-If the sprint has no agents enabled, enable all four canonical agents:
+If the space has no agents enabled, enable all four canonical agents:
 
 ```
 forloopSpaceSprintAiAgentsUpdate(sprintId=<id>, enabledAgentKeys=["forLoopDeveloper","forLoopTester","forLoopDevops","forLoopCreator"])
@@ -265,7 +265,7 @@ forloopSpaceSprintAiAgentsUpdate(sprintId=<id>, enabledAgentKeys=["forLoopDevelo
 
 ### Step 10: Check Developer Task Status (Required)
 
-If a sprint is active, check whether a developer task is currently running:
+If a space is active, check whether a developer task is currently running:
 
 ```
 forloopDeveloperStatus(sprintId=<activeSprintId>)
@@ -274,7 +274,7 @@ forloopDeveloperStatus(sprintId=<activeSprintId>)
 This tells you:
 - If an ECS developer task is **RUNNING** (show elapsed time and story progress)
 - If it has **SUCCEEDED** or **FAILED** (task completed, check story comments for details)
-- If **no task exists** (idle sprint, ready for new dispatch)
+- If **no task exists** (idle space, ready for new dispatch)
 
 ### Step 11: Load Story Implementation Details (Required)
 
@@ -300,15 +300,15 @@ Created:
   .forloop/manifest.json
   .forloop/sync/
 
-Sprint directories will be created when a sprint is selected:
+Space directories will be created when a space is selected:
   .forloop/sprint-{id}/knowledge/
   .forloop/sprint-{id}/plan/
   .forloop/sprint-{id}/task/
 
 How would you like to get started?
 
-1. Create a new sprint plan
-2. Connect to existing ForLoop sprint
+1. Create a new space plan
+2. Connect to existing ForLoop space
 3. Learn about your project
 ```
 
@@ -353,7 +353,7 @@ From: knowledge-auth-flow-20260410-093015.md
 
 ```markdown
 Extract:
-- Sprint ID and goal
+- Space ID and goal
 - Timeline dates
 - In-scope features
 - Requirements
@@ -364,7 +364,7 @@ Extract:
 
 ```
 From: plan-14-20260410-093015.md
-- Sprint ID: 14
+- Space ID: 14
 - Goal: "Implement auth system"
 - Dates: Apr 10-24, 2026
 ```
@@ -470,7 +470,7 @@ Options:
 | `knowledge-management` | Loads knowledge files |
 | `plan-documentation`   | Loads plan files      |
 | `task-tracking`        | Loads task files      |
-| `sprint-planning`      | Sets sprint context   |
+| `sprint-planning`      | Sets space context   |
 | `aivy-documents-sync`  | Syncs S3 ↔ local (Step 7) |
 | `agent-auto-assignment` | Fetches enabled agents (Step 8) |
 
@@ -499,11 +499,11 @@ Options:
 
 | # | ❌ Don't | ✅ Do Instead |
 |---|---------|--------------|
-| 1 | Skip context check at session start | Always check ~/.forloop/manifest.json first, then load sprint subdir |
+| 1 | Skip context check at session start | Always check ~/.forloop/manifest.json first, then load space subdir |
 | 2 | Load all file content into context | Use `head -50` for large files, summarize |
 | 3 | Assume manifest is always valid | Validate manifest structure, fall back to folder scan |
 | 4 | Start work without presenting context summary | Always present summary and ask for direction |
-| 5 | Skip S3 sync after context load | Run `forloopSyncS3ToLocal` if sprint is active |
+| 5 | Skip S3 sync after context load | Run `forloopSyncS3ToLocal` if space is active |
 | 6 | Skip fetching enabled AI agents | Run `forloopSpaceSprintGet` to get `sprintAiAgents` |
 
 ## Quality Gates

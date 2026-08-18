@@ -2,7 +2,7 @@
 name: agent-auto-assignment
 description: >
   Automatically assigns the right AI agent based on story type.
-  Use when creating stories that need agent assignment, setting up sprint agents,
+  Use when creating stories that need agent assignment, setting up space agents,
   or classifying work by intent (planning vs development vs deployment).
   DO NOT use when: manually assigning agents to existing stories (use
   story-update), or writing application code.
@@ -84,11 +84,11 @@ The four canonical agent keys used in ForLoop story assignment:
 
 ## Workflow
 
-### Step 1: Fetch Sprint, Enabled Agents, and Developer Status
+### Step 1: Fetch Space, Enabled Agents, and Developer Status
 
 At the start of planning session:
-1. Get the active sprint ID (from context, flag, or git branch)
-2. Fetch sprint details: `forloopSpaceSprintGet(sprintId=<id>)` — check `sprintAiAgents` array for enabled agents
+1. Get the active space ID (from context, flag, or git branch)
+2. Fetch space details: `forloopSpaceSprintGet(sprintId=<id>)` — check `sprintAiAgents` array for enabled agents
 3. Check developer task status: `forloopDeveloperStatus(sprintId=<id>)` — if an ECS developer task is running, that agent is already occupied
 4. Store enabled and available agent keys in context
 
@@ -124,7 +124,7 @@ Priority: `forLoopTester` > `forLoopDevops` > `forLoopDeveloper` > `forLoopCreat
 
 ### Step 3: Enable Agent if Needed
 
-If the target agent is not enabled for the sprint:
+If the target agent is not enabled for the space:
 1. Call `forloopSpaceSprintAiAgentsUpdate(sprintId=<id>, enabledAgentKeys=[...])` with the agent key added
 2. Wait for confirmation that agent is enabled
 
@@ -192,7 +192,7 @@ User: "Generate a project requirements document"
 forloopAiAgentList()
 ```
 
-### Enable Agents for Sprint
+### Enable Agents for Space
 ```
 forloopSpaceSprintAiAgentsUpdate(sprintId=<id>, enabledAgentKeys=["forLoopDeveloper","forLoopTester","forLoopDevops","forLoopCreator"])
 ```
@@ -218,7 +218,7 @@ forloopStoryTemplate(
 1. **Agent not in catalog**: If an agent key is not found in the catalog, fall back to `forLoopDeveloper`
 2. **Multiple agent keywords**: If story matches multiple agents, use priority order: `forLoopTester` > `forLoopDevops` > `forLoopDeveloper` > `forLoopCreator`
 3. **No keywords matched**: Default to `forLoopDeveloper` for task stories, `forLoopCreator` for note stories
-4. **Sprint has no agents enabled**: Enable all four canonical agents before creating stories
+4. **Space has no agents enabled**: Enable all four canonical agents before creating stories
 5. **ECS developer task running**: If `forloopDeveloperStatus` shows RUNNING, avoid assigning more stories to developer agents — they're already occupied
 6. **Story spans multiple agent types**: If a story requires BOTH file generation AND code integration (e.g., "Generate music tracks and build audio player UI"), split into two stories: one for Creator (assets), one for Developer (integration). Set Developer to depend on Creator.
 7. **Creator-only stories**: Creator follows a different workflow — no Phase 2-4 needed. Creator stories are complete after file generation, commit, and auto-deploy via `frontend/public/`. They do not require Tester or Devops stories.
@@ -245,7 +245,7 @@ forloopStoryTemplate(
 ## Quality Gates
 
 - [ ] Story intent classified before assignment
-- [ ] Target agent is enabled for the sprint
+- [ ] Target agent is enabled for the space
 - [ ] Developer availability checked via `forloopDeveloperStatus`
 - [ ] `assigneeType` set to `"agent"`
 - [ ] `assigneeAgentKey` matches one of: `forLoopDeveloper`, `forLoopTester`, `forLoopDevops`, `forLoopCreator`
@@ -254,7 +254,7 @@ forloopStoryTemplate(
 ## Acceptance Criteria
 
 - [ ] Planner agent can list all available AI agents
-- [ ] Planner agent can enable agents for the active sprint
+- [ ] Planner agent can enable agents for the active space
 - [ ] Planner agent can check developer availability via `forloopDeveloperStatus`
 - [ ] Stories are classified correctly based on keywords and intent
 - [ ] Stories are created with the correct `assigneeAgentKey`

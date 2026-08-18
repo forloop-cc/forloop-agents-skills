@@ -1,11 +1,11 @@
 ---
 name: sprint-planning
 description: >
-  Use when starting new sprint cycles or organizing backlog into sprints.
-  Creates actionable sprints with well-defined goals and appropriately sized stories.
+  Use when starting new space cycles or organizing backlog into spaces.
+  Creates actionable spaces with well-defined goals and appropriately sized stories.
   Integrates with ~/.forloop/sprint-{id}/ for persistent context.
-  DO NOT use when: mid-sprint story additions (use story-creation),
-  sprint modifications (use story-update), or writing application code.
+  DO NOT use when: mid-space story additions (use story-creation),
+  space modifications (use story-update), or writing application code.
 license: MIT
 metadata:
   version: "2.0.0"
@@ -13,28 +13,28 @@ metadata:
   sources:
     - Scrum Guide (scrumguides.org)
     - INVEST criteria (agile modeling)
-triggers: ["plan sprint", "sprint setup", "new sprint", "sprint goals", "capacity planning"]
+triggers: ["plan space", "space setup", "new space", "space goals", "capacity planning"]
 integrations: [forloop-context, knowledge-management, plan-documentation, task-tracking, tech-stack-default]
 ---
 
-# Sprint Planning with ForLoop
+# Space Planning with ForLoop
 
 ## Overview
-Structured approach to sprint planning using ForLoop tools. Creates actionable sprints with well-defined goals and appropriately sized stories. Integrates with `~/.forloop/sprint-{id}/` for persistent context.
+Structured approach to space planning using ForLoop tools. Creates actionable spaces with well-defined goals and appropriately sized stories. Integrates with `~/.forloop/sprint-{id}/` for persistent context.
 
 This is planning-only: do not write or modify user application code. Convert plans into stories using ForLoop tools.
 
 For web development planning, assume the default ForLoop tech stack (React 18 + Vite, Lambda Node.js 20, DynamoDB, Terraform). See `tech-stack-default` skill. Do NOT ask users to confirm these choices.
 
-When a sprint is created with a project name, a GitHub repo `sprint-{id}-project-{name}` is automatically created with the full project-base template (frontend, backend, infra, CI/CD). Do NOT plan repo creation or CI/CD setup — these are handled automatically.
+When a space is created with a project name, a GitHub repo `sprint-{id}-project-{name}` is automatically created with the full project-base template (frontend, backend, infra, CI/CD). Do NOT plan repo creation or CI/CD setup — these are handled automatically.
 
 ## Organization Requirement (MANDATORY)
 
-**Before creating any sprint, you MUST confirm the organization:**
+**Before creating any space, you MUST confirm the organization:**
 
 1. Call `forloopOrganizationList` to get all organizations
 2. **No organizations:** Guide user to create one first with `forloopOrganizationCreate`
-3. **One organization:** Confirm "Using organization '{name}' (ID: {id}) for this sprint?"
+3. **One organization:** Confirm "Using organization '{name}' (ID: {id}) for this space?"
 4. **Multiple organizations:** List them all and ask the user to select one
 
 The organization ID must be:
@@ -42,16 +42,16 @@ The organization ID must be:
 - Passed to `forloopSpaceSprintCreate` as the `organizationId` parameter
 - Written to the project's `forloop.json` as `organizationId`
 
-**Never create a sprint without a confirmed organization ID.**
+**Never create a space without a confirmed organization ID.**
 
 ## When to Use
-- Starting a new sprint cycle
-- Need to organize backlog into sprints
-- Planning sprint goals and capacity
+- Starting a new space cycle
+- Need to organize backlog into spaces
+- Planning space goals and capacity
 
 ## When NOT to Use
-- Mid-sprint story additions (use story-creation skill)
-- Sprint modifications (use story-update workflow)
+- Mid-space story additions (use story-creation skill)
+- Space modifications (use story-update workflow)
 
 ## Process Flow
 
@@ -61,10 +61,10 @@ digraph sprint_planning {
     "Check organizations" [shape=box];
     "Org confirmed?" [shape=diamond];
     "Create/Select org" [shape=box];
-    "Check existing sprints" [shape=box];
-    "Active sprint exists?" [shape=diamond];
-    "Create new sprint" [shape=box];
-    "Get sprint details" [shape=box];
+    "Check existing spaces" [shape=box];
+    "Active space exists?" [shape=diamond];
+    "Create new space" [shape=box];
+    "Get space details" [shape=box];
     "Gather requirements" [shape=box];
     "Capture knowledge" [shape=box];
     "Create plan doc" [shape=box];
@@ -74,14 +74,14 @@ digraph sprint_planning {
 
     "Check .forloop context" -> "Check organizations" [label="forloop-context"];
     "Check organizations" -> "Org confirmed?" [label="forloopOrganizationList"];
-    "Org confirmed?" -> "Check existing sprints" [label="yes"];
+    "Org confirmed?" -> "Check existing spaces" [label="yes"];
     "Org confirmed?" -> "Create/Select org" [label="no"];
-    "Create/Select org" -> "Check existing sprints";
-    "Check existing sprints" -> "Active sprint exists?" [label="forloopSpaceSprintList"];
-    "Active sprint exists?" -> "Get sprint details" [label="yes"];
-    "Active sprint exists?" -> "Create new sprint" [label="no"];
-    "Create new sprint" -> "Get sprint details" [label="forloopSpaceSprintGet"];
-    "Get sprint details" -> "Gather requirements";
+    "Create/Select org" -> "Check existing spaces";
+    "Check existing spaces" -> "Active space exists?" [label="forloopSpaceSprintList"];
+    "Active space exists?" -> "Get space details" [label="yes"];
+    "Active space exists?" -> "Create new space" [label="no"];
+    "Create new space" -> "Get space details" [label="forloopSpaceSprintGet"];
+    "Get space details" -> "Gather requirements";
     "Gather requirements" -> "Capture knowledge" [label="knowledge-management"];
     "Capture knowledge" -> "Create plan doc" [label="plan-documentation"];
     "Create plan doc" -> "Create tasks" [label="task-tracking"];
@@ -94,21 +94,21 @@ digraph sprint_planning {
 
 ### Session Start (ALWAYS FIRST)
 - [ ] Run forloop-context skill to load `~/.forloop/manifest.json` context
-- [ ] Check manifest.json for active sprint
+- [ ] Check manifest.json for active space
 - [ ] Review loaded knowledge, plans, and tasks from `~/.forloop/sprint-{id}/`
 
 ### Before Planning:
 - [ ] **Check organizations** — call `forloopOrganizationList`
 - [ ] **Confirm organization ID** — if multiple orgs, ask user to select
 - [ ] **Create organization if needed** — if no orgs, guide user to create one
-- [ ] Verify team availability for sprint period
+- [ ] Verify team availability for space period
 - [ ] Review backlog priorities
-- [ ] Check velocity from previous sprints
-- [ ] Confirm sprint context with user
+- [ ] Check velocity from previous spaces
+- [ ] Confirm space context with user
 
 During Planning:
-- [ ] Set sprint duration (typically 2 weeks)
-- [ ] Define sprint goal/theme
+- [ ] Set space duration (typically 2 weeks)
+- [ ] Define space goal/theme
 - [ ] Capture requirements to knowledge (knowledge-management)
 - [ ] Create plan document (plan-documentation)
 - [ ] Create stories with clear acceptance criteria
@@ -125,7 +125,7 @@ During Planning:
 2. Plan document created (plan-documentation)
 3. User EXPLICITLY approves plan ("confirm" or "yes")
 
-This applies to EVERY sprint regardless of perceived simplicity.
+This applies to EVERY space regardless of perceived simplicity.
 
 ## Requirements Gathering Rules
 
@@ -136,7 +136,7 @@ This applies to EVERY sprint regardless of perceived simplicity.
 
 ## Capacity Planning Options
 
-When discussing sprint capacity, present 2-3 approaches:
+When discussing space capacity, present 2-3 approaches:
 
 **Option A: Conservative (Recommended)**
 - Use 60% focus factor
@@ -151,7 +151,7 @@ When discussing sprint capacity, present 2-3 approaches:
 **Option C: Aggressive**
 - Use 100% focus factor
 - High risk, requires no interruptions
-- Only for time-critical sprints
+- Only for time-critical spaces
 
 ## Context Discovery (ALWAYS FIRST)
 
@@ -161,7 +161,7 @@ When discussing sprint capacity, present 2-3 approaches:
 2. Load manifest.json (if exists)
 3. Load knowledge, plans, and tasks from `~/.forloop/sprint-{id}/`
 4. Present context summary to user
-5. Confirm active sprint with user
+5. Confirm active space with user
 
 ```
 # Context check happens automatically via forloop-context skill
@@ -169,8 +169,8 @@ When discussing sprint capacity, present 2-3 approaches:
 ```
 
 **After context loaded:**
-- Summarize existing sprint context
-- Ask: "Continue with sprint #{id} or start new?"
+- Summarize existing space context
+- Ask: "Continue with space #{id} or start new?"
 
 ## Tool Usage
 
@@ -180,17 +180,17 @@ When discussing sprint capacity, present 2-3 approaches:
 # Loads `~/.forloop/manifest.json` and folder contents
 ```
 
-### List existing sprints
+### List existing spaces
 ```
 forloopSpaceSprintList()
 ```
 
-### Get sprint details
+### Get space details
 ```
 forloopSpaceSprintGet(sprintId=<id>)
 ```
 
-### Add stories to sprint
+### Add stories to space
 ```
 # Via task-tracking skill (recommended)
 # or direct:
@@ -213,7 +213,7 @@ forloopStoryUpdate(
 
 ## Integrated Skills Workflow
 
-### Complete Sprint Planning Flow
+### Complete Space Planning Flow
 
 1. **Session Start** → `forloop-context`
    - Load `~/.forloop/sprint-{id}/` context
@@ -262,7 +262,7 @@ Always plan for:
 **Good story format:**
 - **Title**: Actionable outcome ("Implement login page")
 - **Description**: User story format ("As a [user], I want [feature], so that [benefit]")
-- **Priority**: high/medium/low based on sprint goals
+- **Priority**: high/medium/low based on space goals
 - **Points**: Use Fibonacci-like scale (0, 1, 2, 3, 5, 8, 10)
 
 **INVEST criteria:**
@@ -270,14 +270,14 @@ Always plan for:
 - Negotiable (flexible implementation)
 - Valuable (clear user benefit)
 - Estimable (can size the effort)
-- Small (fits within sprint)
+- Small (fits within space)
 - Testable (verifiable completion)
 
 ## Capacity Planning
 
 **Typical velocity:**
-- New team: 15-20 points per sprint
-- Established team: Use average of last 3 sprints
+- New team: 15-20 points per space
+- Established team: Use average of last 3 spaces
 - Reduce capacity for holidays, on-call, meetings
 
 **Example calculation:**
@@ -288,12 +288,12 @@ Focus factor: 0.6 (meetings, email, support)
 Effective days: 10 × 0.6 = 6 days per developer
 Total capacity: 3 × 6 = 18 developer-days
 Average story: 3 points = 1.5 days
-Recommended sprint load: 18 / 1.5 = ~12 points
+Recommended space load: 18 / 1.5 = ~12 points
 ```
 
 ## Common Mistakes
 
-❌ **Over-committing**: Loading sprint beyond team capacity
+❌ **Over-committing**: Loading space beyond team capacity
 → Fix: Use historical velocity, not optimistic estimates
 
 ❌ **Vague stories**: "Improve performance" without metrics
@@ -306,7 +306,7 @@ Recommended sprint load: 18 / 1.5 = ~12 points
 
 **If you catch yourself:**
 - About to create stories before plan approved
-- Expressing satisfaction before verification ("Great!", "Sprint planned!")
+- Expressing satisfaction before verification ("Great!", "Space planned!")
 - Thinking "just this once" skip hard gate
 - Skipping capacity discussion
 - About to claim complete without running verification
@@ -315,13 +315,13 @@ Recommended sprint load: 18 / 1.5 = ~12 points
 
 ## Verification
 
-Before completing sprint planning:
+Before completing space planning:
 - [ ] Context loaded from .forloop/ folder
-- [ ] Sprint has clear, measurable goal
+- [ ] Space has clear, measurable goal
 - [ ] Total points within team capacity
 - [ ] All stories have acceptance criteria
 - [ ] Dependencies identified and addressed
-- [ ] Stories align with sprint goal
+- [ ] Stories align with space goal
 - [ ] Knowledge files created and uploaded
 - [ ] Plan file created and uploaded
 - [ ] Task file created and uploaded
@@ -343,18 +343,18 @@ Before completing sprint planning:
 | 5 | Write application code during planning | This skill is planning-only — convert plans to stories via tools |
 | 6 | Skip ~/.forloop/ context check | Always run forloop-context skill first |
 | 7 | Ask multiple questions at once | Ask ONE question at a time, wait for response |
-| 8 | Create sprint without confirming organization | Always call `forloopOrganizationList` and confirm org ID first |
-| 9 | Forget to write organizationId to forloop.json | Include `organizationId` in forloop.json when sprint is created |
+| 8 | Create space without confirming organization | Always call `forloopOrganizationList` and confirm org ID first |
+| 9 | Forget to write organizationId to forloop.json | Include `organizationId` in forloop.json when space is created |
 
 ## Quality Gates
 
 - [ ] forloop-context skill ran and context loaded
 - [ ] Organization confirmed (activeOrganizationId stored in manifest)
-- [ ] Sprint goal is clear and measurable
+- [ ] Space goal is clear and measurable
 - [ ] Total story points within team capacity (60% focus factor)
 - [ ] All stories have acceptance criteria
 - [ ] Dependencies identified and addressed
-- [ ] Stories align with sprint goal
+- [ ] Stories align with space goal
 - [ ] Knowledge files created and uploaded to S3
 - [ ] Plan file created and uploaded to S3
 - [ ] Task file created and uploaded to S3
@@ -368,7 +368,7 @@ Before completing sprint planning:
 |-------|-------------------|
 | `forloop-context` | Session startup, context loading |
 | `knowledge-management` | Captures requirements and decisions |
-| `plan-documentation` | Creates sprint plan documents |
+| `plan-documentation` | Creates space plan documents |
 | `task-tracking` | Creates stories from plan |
 | `story-points` | Estimation (called by task-tracking) |
 | `template-based-tasks` | Story templates (called by task-tracking) |

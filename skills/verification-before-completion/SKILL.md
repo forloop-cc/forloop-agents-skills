@@ -3,7 +3,7 @@ name: verification-before-completion
 description: >
   Use when about to claim work is complete, before uploading files or creating stories.
   Evidence before claims, always. NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE.
-  Applies to ALL planning operations: file uploads, story creation, S3 sync, sprint updates.
+  Applies to ALL planning operations: file uploads, story creation, S3 sync, space updates.
   DO NOT use when: mid-operation (not yet claiming completion).
 license: MIT
 metadata:
@@ -72,7 +72,7 @@ Skip any step = lying, not verifying
 | Stories created | `forloopSpaceSprintGet(sprintId={id}, includeStories=true)` shows IDs | Tool returned success |
 | Knowledge captured | `forloopFileList` shows knowledge file | File created locally |
 | S3 synced | Fresh `forloopFileList` output | "Upload looked successful" |
-| Sprint updated | `forloopSpaceSprintGet` shows changes | Tool returned no error |
+| Space updated | `forloopSpaceSprintGet` shows changes | Tool returned no error |
 
 ---
 
@@ -92,7 +92,7 @@ forloopFileList(sprintId={id})
 # After creating stories
 forloopSpaceSprintGet(sprintId={id}, includeStories=true)
 
-# Verify: Story IDs from creation appear in sprint
+# Verify: Story IDs from creation appear in space
 # Read: Check story count matches expected
 ```
 
@@ -176,7 +176,7 @@ forloopFileList(sprintId={id})
 From verification failures:
 - User said "I don't believe you" - trust broken
 - Files not actually uploaded - data loss
-- Stories missing from sprint - incomplete work
+- Stories missing from space - incomplete work
 - Time wasted on false completion → redirect → rework
 - Violates: "Honesty is a core value"
 
@@ -280,8 +280,8 @@ You: Verifying story creation...
 
 You: ✅ Created 5 stories successfully (verified)
    - Story IDs: 201, 202, 203, 204, 205
-   - All IDs confirmed in sprint story list
-   - Total sprint stories: 5
+   - All IDs confirmed in space story list
+   - Total space stories: 5
 ```
 
 ---
@@ -307,7 +307,7 @@ You: Verifying knowledge capture...
 You: ✅ Knowledge captured (verified)
    - File: knowledge-auth-jwt-20260411-093015.md
    - Size: 1.2 KB
-   - Verified in sprint file list
+   - Verified in space file list
 ```
 
 ---
@@ -367,7 +367,7 @@ forloopFileUpload(filePath=..., sprintId={id})
 | `task-tracking` | Verify stories exist before claiming complete |
 | `knowledge-management` | Verify knowledge file uploaded before claiming complete |
 | `file-management` | Run fresh file.list after each upload |
-| `sprint-planning` | Verify all artifacts before claiming sprint planned |
+| `sprint-planning` | Verify all artifacts before claiming space planned |
 
 ---
 

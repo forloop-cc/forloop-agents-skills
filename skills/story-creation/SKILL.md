@@ -27,7 +27,7 @@ Creating well-structured user stories that are clear, actionable, and testable. 
 - Adding new features to backlog
 - Breaking epics into smaller stories
 - Refining story descriptions and criteria
-- Preparing stories for sprint planning
+- Preparing stories for space planning
 
 ## Planning-Only Rule
 
@@ -170,7 +170,7 @@ Before creating story, verify:
 | **Negotiable** | Is implementation flexible? Open to discussion? |
 | **Valuable** | Clear user benefit? Business value obvious? |
 | **Estimable** | Team can size it? No unknown tech? |
-| **Small** | Fits in one sprint? Can be completed in days, not weeks? |
+| **Small** | Fits in one space? Can be completed in days, not weeks? |
 | **Testable** | Clear pass/fail criteria? Measurable outcome? |
 
 ## Story Sizing Guidelines

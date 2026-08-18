@@ -1,6 +1,6 @@
 ---
 name: forloop-cli
-description: Use the forloop CLI binary for all ForLoop operations. Covers authentication, sprint management, story CRUD, file operations, sync, and developer triggers via bash commands with JSON output. Use when any ForLoop operation is needed — do NOT use plugin tools.
+description: Use the forloop CLI binary for all ForLoop operations. Covers authentication, space management, story CRUD, file operations, sync, and developer triggers via bash commands with JSON output. Use when any ForLoop operation is needed — do NOT use plugin tools.
 version: 1.0.0
 category: administration
 ---
@@ -87,9 +87,9 @@ echo "$RESULT" | jq '.title'
 | 4 | Quota exceeded | Tell user their tier limit is reached |
 | Other | General error | Show error message, ask user |
 
-### Sprint ID Auto-Detection
+### Space ID Auto-Detection
 
-The CLI auto-detects sprint ID from `FORLOOP_SPRINT_ID` env var or git branch name (e.g., `sprint-14`). Most commands work without explicit `--id` or `--sprint`.
+The CLI auto-detects space ID from `FORLOOP_SPRINT_ID` env var or git branch name (e.g., `sprint-14`). Most commands work without explicit `--id` or `--sprint`.
 
 ---
 
@@ -110,29 +110,29 @@ Never ask the user for their token — direct them to run the command above.
 
 ---
 
-## Sprint Commands
+## Space Commands
 
-### List all sprints
+### List all spaces
 ```bash
 forloop space-sprint list --output json --non-interactive
-# Optional: filter by org or include system organization sprints
+# Optional: filter by org or include system organization spaces
 forloop space-sprint list --org-id 2 --output json --non-interactive
 forloop space-sprint list --include-system-org --output json --non-interactive
 ```
 Returns: `[{ "id": 14, "title": "...", "status": "active", ... }]`
 
-### Get sprint details
+### Get space details
 ```bash
-forloop space-sprint get --output json --non-interactive               # auto-detects sprint
+forloop space-sprint get --output json --non-interactive               # auto-detects space
 forloop space-sprint get --id 14 --output json --non-interactive       # explicit
 forloop space-sprint get --id 14 --no-files --output json --non-interactive  # stories only
 ```
-Returns sprint with title, status, dates, and embedded stories array. Stories and files included by default.
+Returns space with title, status, dates, and embedded stories array. Stories and files included by default.
 
-### Create a sprint
+### Create a space
 ```bash
 forloop space-sprint create \
-  --title "Sprint 15: API Redesign" \
+  --title "Space 15: API Redesign" \
   --start-date 2026-06-15 \
   --end-date 2026-06-28 \
   --output json --non-interactive
@@ -144,13 +144,13 @@ forloop space-sprint create \
 ```
 Returns: `{ "id": 15, "title": "...", ... }`
 
-### Update a sprint
+### Update a space
 ```bash
 forloop space-sprint update --id 14 --title "Updated Title" --output json --non-interactive
 # Partial updates: only pass flags you want to change
 ```
 
-### Delete a sprint (with confirmation)
+### Delete a space (with confirmation)
 ```bash
 forloop space-sprint delete --id 14 --confirm --output json --non-interactive
 ```
@@ -161,7 +161,7 @@ Requires `--confirm`. Warn the user before running this.
 ## Story Commands
 
 ### List stories (via sprint get)
-Stories are embedded in sprint output. Use `forloop space-sprint get --output json` to get all stories.
+Stories are embedded in space output. Use `forloop space-sprint get --output json` to get all stories.
 
 ### Create a story from a template (basic-task or basic-note)
 ```bash
@@ -221,12 +221,12 @@ Returns: `[{ "id": 1, "name": "Basic Task", "slug": "basic-task", "description":
 
 ## File Commands
 
-### List files in a sprint
+### List files in a space
 ```bash
 forloop file list --sprint 14 --output json --non-interactive
 ```
 
-### Upload a file to a sprint
+### Upload a file to a space
 ```bash
 forloop file upload --path ./requirements.md --sprint 14 --output json --non-interactive
 # Optional: --description "Requirements doc" --folder project/docs --story-id 101
@@ -265,7 +265,7 @@ forloop sync aivy-doc-get --sprint 14 --output json --non-interactive
 ```
 Returns JSON: `{ "docFolderId": 101, "exists": true }`. Parse with `jq -r '.docFolderId'`.
 
-### Download sprint files from S3 to local
+### Download space files from S3 to local
 ```bash
 forloop sync s3-to-local --output json --non-interactive
 forloop sync s3-to-local --sprint 14 --output json --non-interactive
@@ -315,7 +315,7 @@ forloop org delete --id 2 --confirm --output json --non-interactive
 
 ## Developer Agent Commands
 
-### Check developer sprint status
+### Check developer space status
 ```bash
 forloop agent developer-status --output json --non-interactive
 forloop agent developer-status --sprint 14 --output json --non-interactive
@@ -346,16 +346,16 @@ forloop auth status
 forloop sync aivy-folder --output json --non-interactive
 forloop sync s3-to-local --output json --non-interactive
 
-# 3. Load sprint context
+# 3. Load space context
 forloop space-sprint get --output json --non-interactive | jq '.stories'
 ```
 
-### Sprint creation pattern
+### Space creation pattern
 ```bash
 # 1. Check org first
 forloop org list --output json --non-interactive | jq '.[].id'
 
-# 2. Create sprint
+# 2. Create space
 forloop space-sprint create --title "..." --start-date YYYY-MM-DD --end-date YYYY-MM-DD --org-id N --output json --non-interactive
 
 # 3. Verify
@@ -396,6 +396,6 @@ forloop file list --sprint 14 --output json --non-interactive | jq '.[] | select
 3. **Never ask the user for their token** — direct them to run `forloop auth login`
 4. **Use `jq` for JSON parsing** — `jq '.[].id'`, `jq -r '.title'`, `jq 'length'`
 5. **Delete commands require `--confirm`** — warn the user before running
-6. **Sprint ID auto-detection is reliable** — prefer auto-detection over explicit `--id`
+6. **Space ID auto-detection is reliable** — prefer auto-detection over explicit `--id`
 7. **Test `forloop` is installed** at startup: `which forloop || echo "CLI not installed"`
 8. **Auth status is text-only** — `forloop auth status` outputs plain text, always exits 0

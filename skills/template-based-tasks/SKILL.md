@@ -104,7 +104,7 @@ forloopStoryTemplate(
 ✅ Story created with "Basic Task" template
 
 **#79**: Review PR #123
-**Sprint**: #14
+**Space**: #14
 **Template**: Basic Task
 **Type**: task
 **AI Agent**: developer
@@ -125,11 +125,11 @@ priority: "high"
 points: 3
 ```
 
-### From "Add note about sprint goals"
+### From "Add note about space goals"
 
 ```
-taskTitle: "Sprint Goals Note"
-description: "Document sprint goals and objectives"
+taskTitle: "Space Goals Note"
+description: "Document space goals and objectives"
 status: "not-started" (maps to "todo")
 priority: "medium"
 points: 1
@@ -321,7 +321,7 @@ Before completing task creation:
 - [ ] Priority set based on urgency
 - [ ] Story points estimated
 - [ ] Status set to "not-started" (default)
-- [ ] Sprint ID resolved
+- [ ] Space ID resolved
 
 ## Examples
 
@@ -374,7 +374,7 @@ forloopStoryTemplate(
 
 ### Example 3: Meeting Notes
 
-**User:** "Add notes from today's sprint planning meeting"
+**User:** "Add notes from today's space planning meeting"
 
 **Thought Process:**
 1. Request type: Notes → Basic Note
@@ -387,8 +387,8 @@ forloopStoryTemplate(
 forloopStoryTemplate(
   templateSlug=basic-note,
   sprintId=14,
-  taskTitle="Sprint Planning Meeting Notes",
-  description="Notes from sprint planning",
+  taskTitle="Space Planning Meeting Notes",
+  description="Notes from space planning",
   priority=low,
   points=1
 )
@@ -416,7 +416,7 @@ forloopStoryTemplate(
 - [ ] Priority set based on urgency
 - [ ] Story points estimated
 - [ ] Status set to `not-started` (default)
-- [ ] Sprint ID resolved
+- [ ] Space ID resolved
 - [ ] Agent assignee determined (if applicable)
 - [ ] Creation verified via tool response
 
@@ -424,7 +424,7 @@ forloopStoryTemplate(
 
 This skill works well with:
 
-- **sprint-planning** - Creates tasks during sprint planning
+- **sprint-planning** - Creates tasks during space planning
 - **story-points** - Helps estimate story points for tasks
 - **user-management** - Assigns tasks to team members
 

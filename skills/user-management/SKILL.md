@@ -4,7 +4,7 @@ description: >
   Use when checking user profile, storage quotas, or managing organizations.
   Provides workflows for user and organization administration including
   quota checks, org creation/update/delete, and member management.
-  DO NOT use when: managing stories or sprints (use other skills),
+  DO NOT use when: managing stories or spaces (use other skills),
   file management (use file-management), or AI agent queries.
 license: MIT
 metadata:
@@ -28,7 +28,7 @@ Manage user profiles, check quota limits, and administer organizations using For
 - Managing team members
 
 ## When NOT to Use
-- Story or sprint operations (use other skills)
+- Story or space operations (use other skills)
 - File management (use file-management skill)
 - AI agent queries (use agent skills)
 
@@ -87,13 +87,13 @@ forloopUserProfile()
 ### Actions Based on Tier
 
 **Free Tier:**
-- Limited to 1 system sprint
-- Max 20 stories per sprint
+- Limited to 1 system space
+- Max 20 stories per space
 - Limited storage
 
 **Team Tier:**
 - Multiple organizations
-- Multiple sprints per org
+- Multiple spaces per org
 - Increased storage
 
 **Enterprise Tier:**
@@ -119,13 +119,13 @@ forloopUserQuotas()
 📊 Quota Usage (team tier)
 
 **Organizations**: 2/3
-**System Sprints**: 1/5
+**System Spaces**: 1/5
 **Storage**: 150 MB / 500 MB
 **Free Stories**: 5/20
 
 **Owned Organizations:**
-  - Engineering Team: 3/10 sprints
-  - Marketing Team: 1/10 sprints
+  - Engineering Team: 3/10 spaces
+  - Marketing Team: 1/10 spaces
 ```
 
 ### Quota Check Before Actions
@@ -139,13 +139,13 @@ forloopUserQuotas()
 forloopOrganizationCreate(name="New Team")
 ```
 
-**Before Creating Sprint:**
+**Before Creating Space:**
 ```
-# Check system sprint quota
+# Check system space quota
 forloopUserQuotas()
 
 # If remaining > 0, proceed
-forloopSpaceSprintCreate(title="Sprint 43", startDate=...)
+forloopSpaceSprintCreate(title="Space 43", startDate=...)
 ```
 
 ---
@@ -229,7 +229,7 @@ forloopOrganizationUpdate(
 
 **⚠️ Warnings:**
 - This action is PERMANENT
-- All sprints, stories, and members are deleted
+- All spaces, stories, and members are deleted
 - Cannot be undone
 
 **Example:**
@@ -296,7 +296,7 @@ forloopOrganizationQuotas(organizationId=1)
   - Storage: 524288000 bytes
 
 **Usage:**
-  - Sprints: 3
+  - Spaces: 3
 ```
 
 ---
@@ -387,7 +387,7 @@ forloopOrganizationCreate(
 
 **Arguments:** None
 
-**Returns:** Quotas for organizations, sprints, storage, stories
+**Returns:** Quotas for organizations, spaces, storage, stories
 
 ---
 
@@ -398,7 +398,7 @@ forloopOrganizationCreate(
 **Arguments:**
 - `--organizationId` (required)
 
-**Returns:** Sprint usage, storage limits
+**Returns:** Space usage, storage limits
 
 ---
 
@@ -473,7 +473,7 @@ forloopOrganizationCreate(
 | 2 | Delete organization without `--confirm true` | Explicit confirmation required |
 | 3 | Update organization without owner permission | Check role via `forloopOrganizationList` |
 | 4 | Assume tier allows operation | Verify tier (free/team/enterprise) limits |
-| 5 | Create sprint without checking sprint quota | Check `forloopUserQuotas` before `forloopSpaceSprintCreate` |
+| 5 | Create space without checking space quota | Check `forloopUserQuotas` before `forloopSpaceSprintCreate` |
 
 ## Quality Gates
 

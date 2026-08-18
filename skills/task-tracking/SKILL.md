@@ -30,7 +30,7 @@ Generates actionable task lists from plan documents, estimates story points, app
 
 | User Request | Action |
 |--------------|--------|
-| "Create tasks for sprint X" | Generate task list |
+| "Create tasks for space X" | Generate task list |
 | "Break down the plan into stories" | Task breakdown |
 | "Create the stories" | Create stories in ForLoop |
 | "Estimate and create stories" | Full workflow |
@@ -79,7 +79,7 @@ Check manifest first: `~/.forloop/manifest.json`.
 Get plan file from manifest. If missing, scan `~/.forloop/sprint-{sprintId}/plan/` for the latest `plan-{sprintId}-*.md`.
 
 **Extract from plan:**
-- Sprint goal
+- Space goal
 - In-scope features
 - Requirements
 - Constraints
@@ -153,7 +153,7 @@ assigneeAgentKey: forLoopDeveloper
 **Present proposed breakdown with agent assignments:**
 
 ```
-📋 Proposed Task Breakdown for Sprint #14
+📋 Proposed Task Breakdown for Space #14
 
 | # | Task | Agent | Template | Points | Priority |
 |---|------|-------|----------|--------|----------|
@@ -231,7 +231,7 @@ The tool will return the doc_folder story ID (e.g., `#123`).
 | AWS, CI/CD, deployment, Terraform, infrastructure | `forLoopDevops` |
 | Document/media generation | `forLoopCreator` |
 
-**ALWAYS use `forloopStoryTemplate` with `templateSlug=basic-task` to create stories from plan breakdown.** This ensures the story has a `templateId` set, proper metadata structure, and renders correctly on the sprint canvas.
+**ALWAYS use `forloopStoryTemplate` with `templateSlug=basic-task` to create stories from plan breakdown.** This ensures the story has a `templateId` set, proper metadata structure, and renders correctly on the space canvas.
 
 **Create stories with template, agent assignment, and points:**
 
@@ -266,9 +266,9 @@ forloopStoryTemplate(
 ]
 ```
 
-**Sub-sprint auto-linking**: When creating a story from the `basic-task` template, the server
-automatically links it to the currently active sub-sprint. No manual `subSprintId` is needed.
-Stories from other templates (doc-folder, basic-note, schedule-meeting) remain sprint-level
+**Iteration auto-linking**: When creating a story from the `basic-task` template, the server
+automatically links it to the currently active iteration. No manual `subSprintId` is needed.
+Stories from other templates (doc-folder, basic-note, schedule-meeting) remain space-level
 and are always visible regardless of the active iteration.
 
 **BEFORE claiming complete:**
@@ -285,7 +285,7 @@ and are always visible regardless of the active iteration.
 
 **Template:**
 ```markdown
-# Task List - Sprint #{sprintId}
+# Task List - Space #{sprintId}
 
 ## Metadata
 - **Created:** {datetime}
@@ -402,7 +402,7 @@ forloopSyncLocalToS3(
 
 ### Example 1: Full Task Creation
 
-**User:** "Create tasks for sprint 14"
+**User:** "Create tasks for space 14"
 
 **Workflow:**
 1. Read plan: `.forloop/sprint-{sprintId}/plan/plan-14-20260410-093015.md`
@@ -512,7 +512,7 @@ Always call story-points skill before story creation. If estimation fails, use d
 ### Issue: Agent not assigned to story
 
 **Check:**
-1. Is the agent enabled for the sprint? Run: `forloopSpaceSprintGet(sprintId={id})`
+1. Is the agent enabled for the space? Run: `forloopSpaceSprintGet(sprintId={id})`
 2. If not enabled, run: `forloopSpaceSprintAiAgentsUpdate(sprintId={id}, enabledAgentKeys=["forLoopDeveloper","forLoopTester","forLoopDevops","forLoopCreator"])`
 3. Use `agent-auto-assignment` skill to determine correct agent
 

@@ -1,7 +1,7 @@
 ---
 name: file-management
 description: >
-  Use when uploading files to ForLoop sprints or managing sprint files.
+  Use when uploading files to ForLoop spaces or managing space files.
   Covers the complete file lifecycle: upload, organize, list, delete, and download.
   Includes immediate upload pattern for .forloop/ folder files via S3 sync.
   DO NOT use when: storing code (use repository integration),
@@ -18,12 +18,12 @@ metadata:
 # File Management with ForLoop
 
 ## Overview
-Upload, organize, and manage files in ForLoop sprints using S3 storage. This skill covers the complete file lifecycle from upload to deletion. Includes immediate upload pattern for .forloop/ folder files.
+Upload, organize, and manage files in ForLoop spaces using S3 storage. This skill covers the complete file lifecycle from upload to deletion. Includes immediate upload pattern for .forloop/ folder files.
 
 ## When to Use
-- Uploading documents, images, or media to sprints
+- Uploading documents, images, or media to spaces
 - Creating document folders for organization
-- Listing or managing sprint files
+- Listing or managing space files
 - Sharing file access with team members
 - **NEW:** Uploading .forloop/ knowledge, plan, and task files to S3
 
@@ -44,7 +44,7 @@ digraph file_management {
     "Get download URL?" [shape=diamond];
     "Upload to S3" [shape=box];
     "Create doc_folder" [shape=box];
-    "List sprint files" [shape=box];
+    "List space files" [shape=box];
     "Delete file" [shape=box];
     "Get signed URL" [shape=box];
 
@@ -53,7 +53,7 @@ digraph file_management {
     "Upload file?" -> "Create folder?" [label="no"];
     "Create folder?" -> "Create doc_folder" [label="yes"];
     "Create folder?" -> "List files?" [label="no"];
-    "List files?" -> "List sprint files" [label="yes"];
+    "List files?" -> "List space files" [label="yes"];
     "List files?" -> "Delete file?" [label="no"];
     "Delete file?" -> "Delete file" [label="yes, --confirm"];
     "Delete file?" -> "Get download URL?" [label="no"];
@@ -68,7 +68,7 @@ digraph file_management {
 ### Prerequisites
 
 - Valid ForLoop API token
-- Sprint ID for file attachment
+- Space ID for file attachment
 - File must exist locally
 
 ### Aivy Sync Mode (Required for `~/.forloop/*`)
@@ -93,7 +93,7 @@ forloopSyncLocalToS3(filePath=.forloop/{knowledge|plan|task}/..., sprintId={spri
 
 **Arguments:**
 - `--filePath` (required): Local path to file
-- `--sprintId` (required): Target sprint
+- `--sprintId` (required): Target space
 - `--description` (optional): File description
 
 **Example:**
@@ -155,7 +155,7 @@ Depends on user tier:
 **Purpose:** Create a container for organizing related files
 
 **Arguments:**
-- `--sprintId` (required): Target sprint
+- `--sprintId` (required): Target space
 - `--title` (required): Folder name
 - `--description` (optional): Folder description
 - `--permissions` (optional): public, team, or private
@@ -175,7 +175,7 @@ forloopDocFolder(
 ✅ Document folder created!
 
 **#81**: Meeting Recordings
-**Sprint**: #14
+**Space**: #14
 **Type**: doc_folder
 **Permissions**: team
 
@@ -192,7 +192,7 @@ Files are automatically associated with the folder story:
 forloopFileUpload(
   filePath=./meeting_2026_03_28.mp4,
   sprintId=14,
-  description="Sprint planning meeting"
+  description="Space planning meeting"
 )
 ```
 
@@ -200,7 +200,7 @@ forloopFileUpload(
 
 ## File Listing Workflow
 
-### List Sprint Files
+### List Space Files
 
 **Tool:** `forloopFileList`
 
@@ -214,7 +214,7 @@ forloopFileList(sprintId=14)
 
 **Expected Output:**
 ```
-🗂️ Files in Sprint #14:
+🗂️ Files in Space #14:
 
 📎 **requirements.pdf**
    Size: 1.5 MB | Type: application/pdf
@@ -316,7 +316,7 @@ s3://bucket/sprint/14/
 │       └── task-14-20260410-100000.md
 ```
 
-**Note:** `knowledge-application.md` is not created by the planner — it is uploaded by the `forLoopTaskSupervisor` after each sprint execution and synced to local via `forloopSyncS3ToLocal`.
+**Note:** `knowledge-application.md` is not created by the planner — it is uploaded by the `forLoopTaskSupervisor` after each space execution and synced to local via `forloopSyncS3ToLocal`.
 
 ### Upload with doc_folder Linking
 
@@ -415,7 +415,7 @@ forloopFileDownloadUrl(fileId=456)
 
 ### Scenario 1: Document Project Requirements
 
-**Goal:** Store requirements document in sprint
+**Goal:** Store requirements document in space
 
 **Steps:**
 ```
@@ -439,15 +439,15 @@ forloopFileList(sprintId=14)
 # Create folder
 forloopDocFolder(
   sprintId=14,
-  title="Sprint 14 Meetings",
-  description="Meeting recordings for sprint 14"
+  title="Space 14 Meetings",
+  description="Meeting recordings for space 14"
 )
 
 # Upload video
 forloopFileUpload(
   filePath=./recordings/sprint14_planning.mp4,
   sprintId=14,
-  description="Sprint planning session"
+  description="Space planning session"
 )
 ```
 
@@ -470,7 +470,7 @@ forloopFileDownloadUrl(fileId=789)
 
 ### Scenario 4: Clean Up Old Files
 
-**Goal:** Remove outdated files from sprint
+**Goal:** Remove outdated files from space
 
 **Steps:**
 ```
@@ -520,7 +520,7 @@ Stored in ForLoop database:
 
 **Arguments:**
 - `--filePath` (required): Local file path
-- `--sprintId` (required): Sprint ID
+- `--sprintId` (required): Space ID
 - `--description` (optional)
 
 **Process:**
@@ -533,7 +533,7 @@ Stored in ForLoop database:
 
 ### forloopFileList
 
-**Purpose:** List files in a sprint
+**Purpose:** List files in a space
 
 **Arguments:**
 - `--sprintId` (required)
@@ -616,8 +616,8 @@ Stored in ForLoop database:
 
 Before file operations:
 - [ ] File exists locally (for upload)
-- [ ] Sprint ID is valid
-- [ ] User has write permission for sprint
+- [ ] Space ID is valid
+- [ ] User has write permission for space
 - [ ] File size within quota
 - [ ] For deletions: confirm intention
 
@@ -642,7 +642,7 @@ This skill works with:
 - **task-tracking** - Upload task files to S3
 - **forloop-context** - Sync verification on session start
 - **template-based-tasks** - Attach documents to tasks
-- **sprint-planning** - Upload sprint artifacts
+- **sprint-planning** - Upload space artifacts
 - **user-management** - Check storage quotas
 
 ---

@@ -24,7 +24,7 @@ Systematic approach to estimating story complexity using multiple factors. Provi
 
 ## When to Use
 - Story refinement sessions
-- Sprint planning (before committing)
+- Space planning (before committing)
 - Re-estimating after new information
 - Calibrating team estimation
 
@@ -268,5 +268,5 @@ Re-estimate when:
 |--------|---------|
 | "Skip estimation, it's obvious" | All stories need points for capacity planning |
 | "Points weren't updated, tool failed" | ALWAYS verify points field after update |
-| "Just this one story, don't need points" | Consistency is critical for sprint planning |
+| "Just this one story, don't need points" | Consistency is critical for space planning |
 | "I'll update points later" | Later never comes - estimate now |

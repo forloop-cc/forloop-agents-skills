@@ -1,11 +1,11 @@
 ---
 name: forloop-skill
 description: >
-  Manage ForLoop sprints, stories, AI agents, files, organizations, and users directly from opencode.
-  Covers token setup, sprint CRUD, story CRUD (with templates), file operations, S3 sync,
+  Manage ForLoop spaces, stories, AI agents, files, organizations, and users directly from opencode.
+  Covers token setup, space CRUD, story CRUD (with templates), file operations, S3 sync,
   organization management, user profile/quotas, and AI agent queries/triggers.
   Use when: any ForLoop operation is needed via plugin tools.
-  DO NOT use when: planning sprints (use sprint-planning), creating tasks
+  DO NOT use when: planning spaces (use sprint-planning), creating tasks
   (use task-tracking), or managing files (use file-management).
 license: MIT
 metadata:
@@ -27,7 +27,7 @@ This skill enables all ForLoop operations via plugin tools. The forLoopPlanner a
 
 ### User & Quota Management
 - `forloopUserProfile` — Get current user profile (name, email, tier, bio, avatar). No args.
-- `forloopUserQuotas` — Check user quota limits (orgs, sprints, storage, free stories). No args.
+- `forloopUserQuotas` — Check user quota limits (orgs, spaces, storage, free stories). No args.
 - `forloopOrganizationQuotas` — Get quota info for a specific organization. Args: `organizationId: number`.
 
 ### Organization Management
@@ -37,26 +37,26 @@ This skill enables all ForLoop operations via plugin tools. The forLoopPlanner a
 - `forloopOrganizationUpdate` — Update org details (owner only). Args: `organizationId: number`, `name?: string`, `description?: string`.
 - `forloopOrganizationDelete` — Delete org permanently. Args: `organizationId: number`, `confirm?: boolean` (default: `false`).
 
-### Sprint Management
+### Space Management
 - `forloopSpaceSprintList` — List all accessible spaces. Args: `organizationId?: number`, `includeSystemOrg?: boolean` (default: `true`).
 - `forloopSpaceSprintGet` — Get space details. Args: `sprintId?: number` (auto-detected), `includeStories?: boolean` (default: `true`), `includeFiles?: boolean` (default: `true`).
 - `forloopSpaceSprintCreate` — Create new space. Args: `title: string`, `startDate: string` (ISO YYYY-MM-DD), `endDate: string` (ISO), `description?: string`, `isPrivate?: boolean`, `organizationId?: number`.
 - `forloopSpaceSprintUpdate` — Update space fields. Args: `sprintId: number`, plus any of `title`, `description`, `startDate`, `endDate`, `isPrivate`.
 - `forloopSpaceSprintDelete` — Delete space and all stories. Args: `sprintId: number`, `confirm?: boolean` (default: `false`).
 
-### Sub-Sprint (Iteration) Tools
+### Iteration Tools
 
 | Tool | Signature | Description |
 |------|-----------|-------------|
-| `forloopSubSprintList` | `forloopSubSprintList({ sprintId?: number })` | List all iterations within a sprint. Falls back to active sprint. |
+| `forloopSubSprintList` | `forloopSubSprintList({ sprintId?: number })` | List all iterations within a space. Falls back to active space. |
 | `forloopSubSprintCreate` | `forloopSubSprintCreate({ sprintId?: number, title?: string, startDate: string, endDate: string })` | Create a new iteration. The previously active iteration is auto-completed by the server. |
 | `forloopSubSprintUpdate` | `forloopSubSprintUpdate({ subSprintId: number, title?: string, startDate?: string, endDate?: string, status?: string })` | Update iteration title, dates, or status. Only one iteration can be `in_progress` at a time. |
-| `forloopSubSprintDelete` | `forloopSubSprintDelete({ subSprintId: number })` | Soft-delete an iteration. Linked stories retain their subSprintId and will not appear in default sprint views. |
+| `forloopSubSprintDelete` | `forloopSubSprintDelete({ subSprintId: number })` | Soft-delete an iteration. Linked stories retain their subSprintId and will not appear in default space views. |
 
 ### Story Management
 - `forloopStoryTemplate` — Create story from template. **MANDATORY for all non-doc_folder stories.** Args: `templateSlug: string` (`"basic-task"` or `"basic-note"`), `taskTitle: string`, `sprintId?: number` (auto-detected), `description?: string`, `priority?: string` (`low`/`medium`/`high`/`critical`), `points?: number` (0-10), `assigneeAgentKey?: string`, `status?: string`.
 - `forloopStoryCreate` — Create story (doc_folder type ONLY). Args: `title: string`, `sprintId?: number`, `type?: string` (`"doc_folder"` or `"schedule"`), `description?: string`, `priority?: string`, `points?: number`, `status?: string`, `assigneeAgentKey?: string`.
-- `forloopStoryGet` — Get story details. Args: `storyId: number`, `includeComments?: boolean` (default: `true`). Returns sprint info, status, priority, points, assignee, description, comments with author info and artifacts.
+- `forloopStoryGet` — Get story details. Args: `storyId: number`, `includeComments?: boolean` (default: `true`). Returns space info, status, priority, points, assignee, description, comments with author info and artifacts.
 - `forloopStoryUpdate` — Update story fields. Args: `storyId: number`, plus any of `title`, `description`, `status` (`todo`/`in_progress`/`done`/`blocked`), `priority`, `points` (0-10).
 - `forloopStoryDelete` — Delete a story. Args: `storyId: number`, `confirm?: boolean` (default: `false`).
 - `forloopStoryBreakdown` — Get AI breakdown of a story into subtasks. Args: `storyId: number`.
@@ -66,9 +66,9 @@ This skill enables all ForLoop operations via plugin tools. The forLoopPlanner a
 - `forloopTemplateList` — List available story templates (Basic Task `basic-task`, Basic Note `basic-note`). No args.
 
 ### File Management
-- `forloopFileList` — List files in a sprint. Args: `sprintId: number`.
+- `forloopFileList` — List files in a space. Args: `sprintId: number`.
 - `forloopFileUpload` — Upload file to S3. Args: `filePath: string`, `sprintId: number`, `description?: string`, `folder?: string`, `storyId?: number` (for doc_folder linking).
-- `forloopFileDelete` — Delete file from sprint. Args: `fileId: number`, `confirm?: boolean` (default: `false`).
+- `forloopFileDelete` — Delete file from space. Args: `fileId: number`, `confirm?: boolean` (default: `false`).
 - `forloopFileDownloadUrl` — Get presigned download URL for a file. Args: `fileId: number`.
 - `forloopFileDownload` — Download a file to the local sandbox. Args: `fileId: number`, `destPath?: string`.
 
@@ -76,7 +76,7 @@ This skill enables all ForLoop operations via plugin tools. The forLoopPlanner a
 - `forloopCreateDocFolder` — Create a document folder story. Args: `sprintId?: number`, `title: string`, `description?: string`, `permissions?: string` (`public`/`team`/`private`, default: `team`).
 - `forloopSyncAivyFolder` — Ensure doc_folder exists. Creates it if missing. Args: `sprintId?: number` (auto-detected), `title?: string` (default: `"forloop Aivy doc"`).
 - `forloopAivyDocGet` — Get doc_folder story ID for linking uploads. Args: `sprintId?: number`, `title?: string` (default: `"forloop Aivy doc"`).
-- `forloopSyncS3ToLocal` — Download sprint files from S3 to `~/.forloop/sprint-{id}/`. Args: `sprintId?: number`, `syncKnowledge?: boolean` (default: `true`), `syncPlans?: boolean` (default: `true`), `syncTasks?: boolean` (default: `true`), `overwrite?: boolean` (default: `false`).
+- `forloopSyncS3ToLocal` — Download space files from S3 to `~/.forloop/sprint-{id}/`. Args: `sprintId?: number`, `syncKnowledge?: boolean` (default: `true`), `syncPlans?: boolean` (default: `true`), `syncTasks?: boolean` (default: `true`), `overwrite?: boolean` (default: `false`).
 - `forloopSyncLocalToS3` — Upload local file to S3. Args: `filePath: string`, `sprintId?: number`, `action?: string` (`"upsert"` or `"delete"`), `folder?: string` (auto-inferred), `storyId?: number`.
 
 ### Schedule Management
@@ -117,7 +117,7 @@ Or store manually in `~/.config/forloop/tokens.json`:
 
 ## Context Resolution
 
-The plugin auto-detects sprint context from:
+The plugin auto-detects space context from:
 1. **Environment variable**: `FORLOOP_SPRINT_ID`
 2. **Git branch**: Branches named `sprint-123` are auto-detected
 3. **Manifest**: `~/.forloop/manifest.json` with `activeSprintId`
@@ -129,13 +129,13 @@ The plugin auto-detects sprint context from:
 forloopTokenGet()                                         → verify auth
 forloopSyncAivyFolder(sprintId=N)                         → ensure doc_folder
 forloopSyncS3ToLocal(sprintId=N)                          → pull latest files
-forloopSpaceSprintGet(sprintId=N, includeStories=true)         → load sprint context
+forloopSpaceSprintGet(sprintId=N, includeStories=true)         → load space context
 forloopAgentHistory(sprintId=N, limit=50)                 → load conversation history
 forloopDeveloperStatus(sprintId=N)                        → check if developer running
 forloopStoryGet(storyId=<each-done>, includeComments=true)→ read developer comments
 ```
 
-### Sprint Creation
+### Space Creation
 ```
 forloopOrganizationList()                                 → check orgs
 forloopSpaceSprintCreate(title="...", startDate="...", endDate="...", organizationId=N)
@@ -174,13 +174,13 @@ forloopDeveloperStatus(sprintId=N)                        → check progress
 
 ## Examples
 
-### List sprints
+### List spaces
 ```
 forloopSpaceSprintList()
 forloopSpaceSprintList(organizationId=2)
 ```
 
-### Get sprint with stories
+### Get space with stories
 ```
 forloopSpaceSprintGet(sprintId=123, includeStories=true, includeFiles=true)
 ```
@@ -220,7 +220,7 @@ forloopStoryGet(storyId=456, includeComments=true)
 - `FORLOOP_API_URL` — API endpoint (default: `https://api.forloop.cc`)
 - `FORLOOP_ENV` — Environment selector (`production` or `development`)
 - `FORLOOP_ALLOW_DEV` — Set to `true` to allow dev API usage
-- `FORLOOP_SPRINT_ID` — Default sprint ID
+- `FORLOOP_SPRINT_ID` — Default space ID
 - `FORLOOP_TOKEN_SET` — Set to `"true"` when token is configured
 
 ## Troubleshooting
@@ -228,7 +228,7 @@ forloopStoryGet(storyId=456, includeComments=true)
 | Problem | Solution |
 |---------|----------|
 | "No API token configured" | Run `forloopTokenSet(token="floop_...")` |
-| "No sprint ID provided" | Set `FORLOOP_SPRINT_ID` or use `sprint-XXX` branch |
+| "No space ID provided" | Set `FORLOOP_SPRINT_ID` or use `sprint-XXX` branch |
 | "Insufficient permissions" | Create new token with required scopes |
 | "Quota exceeded" | Check quotas: `forloopUserQuotas()` |
 
@@ -244,14 +244,14 @@ forloopStoryGet(storyId=456, includeComments=true)
 | 2 | Create stories without templates | Always use `forloopStoryTemplate` with `templateSlug` |
 | 3 | Use `forloopStoryCreate` for tasks | Task stories MUST use `forloopStoryTemplate` |
 | 4 | Upload files without doc_folder | Ensure → get → upload → verify pattern |
-| 5 | Use multiple conflicting sprint ID methods | Use one method: env var, git branch, or explicit ID |
+| 5 | Use multiple conflicting space ID methods | Use one method: env var, git branch, or explicit ID |
 | 6 | Share tokens in chat or commit them | Tokens start with `floop_` — treat as secrets |
 
 ## Quality Gates
 
 - [ ] Token configured via `forloopTokenSet`
 - [ ] Token has required scopes for intended operations
-- [ ] Sprint context resolved (env var, git branch, or manifest)
+- [ ] Space context resolved (env var, git branch, or manifest)
 - [ ] API URL correct for environment (`FORLOOP_ENV`)
 - [ ] Doc folder created before any upload
 - [ ] All task stories created via template (`forloopStoryTemplate`)

@@ -10,7 +10,7 @@ description: >
   mentions "Stripe", "payments", "checkout", "subscriptions", "pricing plans",
   or "billing". Also use when the user provides Stripe API keys.
   DO NOT use when: implementing Stripe code (delegate to developer agent
-  with stripe-integration skill), general sprint planning without payments
+  with stripe-integration skill), general space planning without payments
   (use sprint-planning), or estimating story points (use story-points).
 license: MIT
 metadata:
@@ -42,7 +42,7 @@ integrations:
 
 ## Overview
 
-Plan Stripe payment integration at the sprint/story level. This skill guides the
+Plan Stripe payment integration at the space/story level. This skill guides the
 planner agent through gathering requirements, organizing the product catalog,
 and breaking the work into properly-sequenced stories that developer, devops,
 and tester agents can execute.
@@ -64,7 +64,7 @@ Do NOT propose Stripe integration unless the user asks for it.
 ## When NOT to Use
 
 - Writing Stripe code → delegate to `forLoopDeveloper` with `stripe-integration` skill
-- General sprint planning without payments → use `sprint-planning`
+- General space planning without payments → use `sprint-planning`
 - Estimating story points → use `story-points` skill
 
 ## What the Planner Needs From the User
@@ -185,7 +185,7 @@ Organize the answers into a **product catalog spec**. See
 
 | What to Ask | Notes |
 |-------------|-------|
-| Tenant ID and project name? | Already known from sprint context, confirm |
+| Tenant ID and project name? | Already known from space context, confirm |
 | Dev vs. production webhook URLs? | `api.{tenant}.forloop.cc/{env}/{project}/webhooks/stripe` |
 
 ## Product Catalog Specification
@@ -312,10 +312,10 @@ Here are the recommended story descriptions for each phase:
 
 #### Phase 0 Stories (Planner)
 
-**Story 0a: Store Stripe keys in sprint secrets via server_lambda API**
+**Story 0a: Store Stripe keys in space secrets via server_lambda API**
 
 ```
-Title: Store Stripe API keys in sprint secrets via ForLoop secrets API
+Title: Store Stripe API keys in space secrets via ForLoop secrets API
 
 Description:
 As a planner, I want the user's Stripe secret key and webhook signing
@@ -349,13 +349,13 @@ real price IDs.
 
 Acceptance Criteria:
 - Given the product catalog JSON at plan/stripe-product-catalog.json
-- When devops reads the file from sprint S3
+- When devops reads the file from space S3
 - Then each product is created in Stripe with correct name/description/metadata
 - And each price is created with correct unit_amount, currency, and interval (recurring only)
 - And one-time products have NO recurring field (Stripe creates payment mode)
 - And recurring products have the recurring block (Stripe creates subscription mode)
 - And real Stripe price IDs are recorded in stripe-prices.json with env var mapping
-- And stripe-prices.json is uploaded to the sprint S3 bucket
+- And stripe-prices.json is uploaded to the space S3 bucket
 
 Points: 3
 Priority: high
@@ -591,7 +591,7 @@ Acceptance Criteria:
 - Given infra/project/main.tf
 - When lambda_environment is configured
 - Then SERVER_LAMBDA_URL is set (points to the ForLoop server Lambda)
-- And FORLOOP_SPRINT_ID is set to the current sprint ID
+- And FORLOOP_SPRINT_ID is set to the current space ID
 - And FORLOOP_API_TOKEN is set (with secrets:read scope) and marked sensitive=true
 - And no SSM IAM policy is needed (server_lambda handles SSM access)
 
@@ -754,7 +754,7 @@ in `~/.forloop/sprint-{id}/plan/`:
 | `stripe-product-catalog.md` | Human-readable markdown for user review |
 | `stripe-story-breakdown.md` | Story list with dependencies and point estimates |
 
-Upload all three to the sprint S3 bucket via `forloopSyncLocalToS3(sprintId={id})`.
+Upload all three to the space S3 bucket via `forloopSyncLocalToS3(sprintId={id})`.
 
 **Critical:** The planner filesystem is not persistent (Lambda ephemeral storage).
 Always upload files to S3 after writing them. The devops agent reads them from S3.

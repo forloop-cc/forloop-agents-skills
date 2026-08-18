@@ -1,10 +1,10 @@
 ---
 name: plan-documentation
 description: >
-  Use when creating sprint plan documents with user confirmation.
-  Creates and maintains sprint plan documents stored in ~/.forloop/sprint-{id}/plan/
+  Use when creating space plan documents with user confirmation.
+  Creates and maintains space plan documents stored in ~/.forloop/sprint-{id}/plan/
   and synchronized to S3 for team access.
-  DO NOT use when: mid-sprint small changes (update existing plan),
+  DO NOT use when: mid-space small changes (update existing plan),
   single story requests (use story-creation), or without user confirmation workflow.
 license: MIT
 metadata:
@@ -21,7 +21,7 @@ manifest: updates ~/.forloop/manifest.json
 
 ## Overview
 
-Creates and maintains sprint plan documents with proper user confirmation workflow. Plans are stored locally in `~/.forloop/sprint-{id}/plan/` and synchronized to S3 for team access.
+Creates and maintains space plan documents with proper user confirmation workflow. Plans are stored locally in `~/.forloop/sprint-{id}/plan/` and synchronized to S3 for team access.
 
 ## When to Use
 
@@ -29,15 +29,15 @@ Creates and maintains sprint plan documents with proper user confirmation workfl
 
 | User Request | Action |
 |--------------|--------|
-| "Plan sprint X" | Create sprint plan |
+| "Plan space X" | Create space plan |
 | "Create a plan for..." | Create project plan |
-| "What's our sprint strategy?" | Generate planning document |
+| "What's our space strategy?" | Generate planning document |
 | "Let's design the approach" | Create design spec |
 | "Document the requirements" | Create requirements plan |
 
 ## When NOT to Use
 
-- Mid-sprint small changes (update existing plan)
+- Mid-space small changes (update existing plan)
 - Single story requests (use story-creation)
 - Without user confirmation workflow
 
@@ -95,7 +95,7 @@ If manifest exists and valid:
 - Use `activeSprintId` 
 - Load referenced plan file
 
-If no manifest, scan `~/.forloop/sprint-{sprintId}/plan/` for the most recent plan for the sprint.
+If no manifest, scan `~/.forloop/sprint-{sprintId}/plan/` for the most recent plan for the space.
 
 Ask: "Found existing plan. Update or create new?"
 
@@ -104,9 +104,9 @@ Ask: "Found existing plan. Update or create new?"
 **Ask targeted questions:**
 
 ```
-📋 Sprint Planning Questions
+📋 Space Planning Questions
 
-1. Sprint Goal
+1. Space Goal
    What is the primary objective?
 
 2. Scope
@@ -133,7 +133,7 @@ Ask: "Found existing plan. Update or create new?"
 ```
 📝 Requirements Summary
 
-Sprint Goal: {goal statement}
+Space Goal: {goal statement}
 
 In Scope:
 - {Item 1}
@@ -176,7 +176,7 @@ previousPlanFile: ""
 active: true
 ---
 
-# Sprint Plan - Sprint #{sprintId}
+# Space Plan - Space #{sprintId}
 
 ## Metadata
 - **Created:** {datetime}
@@ -184,14 +184,14 @@ active: true
 - **Author:** ForLoop Planner Agent
 - **Status:** draft | approved | in-progress
 
-## Sprint Goal
+## Space Goal
 {Clear, measurable goal statement}
 
 ## Overview
 
 | Property | Value |
 |----------|-------|
-| Sprint ID | #{sprintId} |
+| Space ID | #{sprintId} |
 | Start Date | {date} |
 | End Date | {date} |
 | Duration | {days} days |
@@ -222,8 +222,8 @@ active: true
 ### Key Dates
 | Milestone | Date | Status |
 |-----------|------|--------|
-| Sprint Start | {date} | ✓ |
-| Sprint End | {date} | pending |
+| Space Start | {date} | ✓ |
+| Space End | {date} | pending |
 
 ## Dependencies
 - {Dependency 1}
@@ -339,9 +339,9 @@ forloopSyncLocalToS3(
 
 ## Examples
 
-### Example 1: New Sprint Plan
+### Example 1: New Space Plan
 
-**User:** "Help me plan sprint 14"
+**User:** "Help me plan space 14"
 
 **Workflow:**
 1. Check manifest → none exists
@@ -354,7 +354,7 @@ forloopSyncLocalToS3(
 
 ### Example 2: Plan Update
 
-**User:** "Add login feature to sprint 14"
+**User:** "Add login feature to space 14"
 
 **Workflow:**
 1. Read: `.forloop/sprint-{sprintId}/plan/plan-14-20260410-093015.md`
@@ -366,7 +366,7 @@ forloopSyncLocalToS3(
 ## Plan Validation Checklist
 
 Before completing:
-- [ ] Sprint goal is clear and measurable
+- [ ] Space goal is clear and measurable
 - [ ] Scope boundaries defined (in/out)
 - [ ] Timeline with specific dates
 - [ ] Requirements detailed
@@ -444,7 +444,7 @@ forloopSpaceSprintGet(sprintId={id})
 | 3 | Upload to wrong S3 folder | Use `folder=project/plans` |
 | 4 | Skip manifest update | Update `~/.forloop/manifest.json` with v2 format (include sprintDir) |
 | 5 | Skip doc_folder linking | Link to doc_folder story for organization |
-| 6 | Use vague sprint goals | Goals must be clear and measurable |
+| 6 | Use vague space goals | Goals must be clear and measurable |
 | 7 | Skip in-scope/out-of-scope boundaries | Define both explicitly |
 
 ## Quality Gates
@@ -452,7 +452,7 @@ forloopSpaceSprintGet(sprintId={id})
 - [ ] `knowledge-application.md` reviewed before planning (understand current architecture)
 - [ ] Developer task status checked via `forloopDeveloperStatus` (ECS task active?)
 - [ ] In-progress story comments read via `forloopStoryGet(storyId, includeComments=true)` (avoid conflicts)
-- [ ] Sprint goal is clear and measurable
+- [ ] Space goal is clear and measurable
 - [ ] Scope boundaries defined (in-scope and out-of-scope)
 - [ ] Timeline with specific start/end dates
 - [ ] Requirements detailed (functional and non-functional)

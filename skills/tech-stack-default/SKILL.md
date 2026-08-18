@@ -21,7 +21,7 @@ All ForLoop projects use this standardized tech stack. When planning stories, as
 
 ## Project Repository
 
-When a sprint is created with a project name, a GitHub repository is **automatically created** by the ForLoop platform. The repo is seeded with the ForLoop project-base template (`.forloop/template/`), which includes the full frontend, backend, infrastructure, and CI/CD scaffolding.
+When a space is created with a project name, a GitHub repository is **automatically created** by the ForLoop platform. The repo is seeded with the ForLoop project-base template (`.forloop/template/`), which includes the full frontend, backend, infrastructure, and CI/CD scaffolding.
 
 ### Repository Naming Convention
 
@@ -29,7 +29,7 @@ When a sprint is created with a project name, a GitHub repository is **automatic
 sprint-{sprint_id}-project-{project-name}
 ```
 
-**Example:** Sprint #14 with project name "abc" creates repo:
+**Example:** Space #14 with project name "abc" creates repo:
 ```
 sprint-14-project-abc
 ```
@@ -50,7 +50,7 @@ sprint-14-project-abc
 
 ### What This Means for Planning
 
-- **Do NOT plan repo creation** — it happens automatically when the sprint is created
+- **Do NOT plan repo creation** — it happens automatically when the space is created
 - **Do NOT ask users "where is the repo?"** — it's at `github.com/.../sprint-{id}-project-{name}`
 - **Do NOT plan GitHub Actions setup** — CI/CD workflows are pre-baked
 - **Do NOT plan project scaffolding** — frontend, backend, and infra are ready to use
@@ -161,7 +161,7 @@ When creating stories via the API (`POST /api/opencode/stories`), these fields a
 |-------|------|----------|---------|-------|
 | `title` | string | Yes | - | Story title |
 | `description` | string | No | null | Story description |
-| `sprintId` | number | Yes | - | Target sprint ID |
+| `sprintId` | number | Yes | - | Target space ID |
 | `type` | enum | No | `story` | `story`, `task`, `bug`, `doc_folder` |
 | `priority` | enum | No | `medium` | `low`, `medium`, `high`, `critical` |
 | `points` | number | No | null | Integer 0-10 |
@@ -590,7 +590,7 @@ Creator can be dispatched before, after, or alongside code pipeline stories. Cre
 - Only agent authorized to add `[deploy]`, `[e2e]`, `[teardown]`, `[debug]`, `[rollback]` tags
 - Environment derived from branch: `main` → `prd`, everything else → `dev`
 - Never modifies `.github/workflows/` or `scripts/`
-- Teardown only when `FORLOOP_SPRINT_ID` is set and scoped to current sprint's project
+- Teardown only when `FORLOOP_SPRINT_ID` is set and scoped to current space's project
 
 **Assign when:** Story title includes: deploy, deployment, AWS, infrastructure, CI/CD, pipeline, secrets, environment, release, terraform, cloudformation, S3, CloudFront, DynamoDB, IAM, teardown, rollback
 

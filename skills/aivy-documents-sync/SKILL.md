@@ -1,11 +1,11 @@
 ---
 name: aivy-documents-sync
 description: >
-  Keep ~/.forloop documents synced with Sprint S3.
+  Keep ~/.forloop documents synced with space S3.
   Use when starting a session, after writing files under ~/.forloop/*,
   or when local and S3 documents need reconciliation.
   DO NOT use when: only reading documents (no changes made),
-  or when no sprint is active.
+  or when no space is active.
 license: MIT
 metadata:
   version: "1.0.0"
@@ -20,15 +20,15 @@ triggers: session start, after writing files under ~/.forloop/*
 
 ## Goal
 
-Maintain a working local document set under `~/.forloop/*` that stays in sync with the active sprint:
+Maintain a working local document set under `~/.forloop/*` that stays in sync with the active space:
 
-1. Ensure a `doc_folder` titled `forloop Aivy doc` exists in the working sprint
-2. Sync Sprint files from S3 to local at session start
+1. Ensure a `doc_folder` titled `forloop Aivy doc` exists in the working space
+2. Sync space files from S3 to local at session start
 3. Sync local file changes to S3 immediately after any create/update/delete under `~/.forloop/*`
 
 ## Session Start (Required)
 
-If a working sprint is available (via `~/.forloop/manifest.json`, `FORLOOP_SPRINT_ID`, or git branch `sprint-XXX`), run:
+If a working space is available (via `~/.forloop/manifest.json`, `FORLOOP_SPRINT_ID`, or git branch `sprint-XXX`), run:
 
 ```
 forloopSyncAivyFolder()

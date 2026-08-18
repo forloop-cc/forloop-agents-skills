@@ -136,7 +136,7 @@ Filename: knowledge-user-roles-20260410-093530.md
 - **Created:** {datetime}
 - **Source:** {user-input|code-analysis|research|decision}
 - **Category:** {domain|technical|architecture|process}
-- **Related Sprint:** #{sprintId}
+- **Related Space:** #{sprintId}
 
 ## Summary
 {2-3 sentence summary}
@@ -341,7 +341,7 @@ If a topic already exists:
 
 | # | ❌ Don't | ✅ Do Instead |
 |---|---------|--------------|
-| 1 | Capture without writing to ~/.forloop/sprint-{id}/knowledge/ | Create file with sprint subdir and knowledge-{topic}-{datetime}.md format |
+| 1 | Capture without writing to ~/.forloop/sprint-{id}/knowledge/ | Create file with space subdir and knowledge-{topic}-{datetime}.md format |
 | 2 | Skip S3 sync after creating knowledge file | Run `forloopSyncLocalToS3` immediately |
 | 3 | Upload to wrong S3 folder | Use `folder=project/knowledge` |
 | 4 | Skip doc_folder linking | Link to doc_folder story for organization |
