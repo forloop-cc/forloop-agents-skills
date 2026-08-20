@@ -65,7 +65,8 @@ All ForLoop tools are invoked as **structured function calls**, NOT as CLI comma
 | `forloopStoryDelete` | `storyId: number` | Delete story |
 | `forloopTemplateList` | _(none)_ | List available templates |
 | `forloopFileList` | `sprintId: number` | List sprint files |
-| `forloopFileUpload` | `filePath: string, sprintId: number, description?: string` | Upload file to S3 |
+| `forloopFileUpload` | `filePath: string, sprintId: number, description?: string, folder?: string, storyId?: number` | Upload file to S3 (link to doc_folder via `storyId`) |
+| `forloopFileDownloadUrl` | `fileId: number` | Get a presigned download URL for an uploaded file (e.g. a design preview) |
 | `forloopFileDelete` | `fileId: number, confirm?: boolean` | Delete file |
 | `forloopSyncAivyFolder` | `sprintId?: number` | Ensure doc_folder exists |
 | `forloopAivyDocGet` | `sprintId?: number` | Get doc_folder story ID |
@@ -353,6 +354,7 @@ Every S3 upload must be linked to a doc_folder story. The pattern: **ensure → 
   - Knowledge files in `~/.forloop/sprint-{id}/knowledge/`
   - Plan files in `~/.forloop/sprint-{id}/plan/`
   - Task files in `~/.forloop/sprint-{id}/task/`
+  - Design preview files in `~/.forloop/sprint-{id}/design/` (self-contained HTML/CSS mockups, only when drafting a fallback design preview)
   - Manifest file `~/.forloop/manifest.json` (at root, shared across spaces)
 - For execution, you must create task stories and optionally trigger server-side agents via `forloopAgentQuery`.
 
