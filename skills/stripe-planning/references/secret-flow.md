@@ -111,6 +111,10 @@ export async function getStripeClient(): Promise<Stripe> {
         'Did the planner store it?'
       )
     }
+    // Full secret key required (sk_); restricted keys are rejected.
+    if (!/^sk_/.test(secretKey)) {
+      throw new Error('[stripe] STRIPE_SECRET_KEY must start with sk_')
+    }
     _stripe = new Stripe(secretKey, {
       apiVersion: '2026-07-29.dahlia',
     })
@@ -194,7 +198,7 @@ it just calls the same API endpoint regardless of environment.
 |------|-------|----------|
 | Store Stripe secret key | Planner | `PUT /api/opencode/sprints/:id/secrets/STRIPE_SECRET_KEY` via forloop plugin |
 | Store webhook secret | Planner | `PUT /api/opencode/sprints/:id/secrets/STRIPE_WEBHOOK_SECRET` via forloop plugin |
-| Set publishable key on frontend | Devops | GitHub Actions Variable `VITE_STRIPE_PUBLISHABLE_KEY` |
+| Set publishable key on frontend | Devops | Commit `stripePublishableKey` to `forloop.json` (delivered via deploy config API; GitHub Variable fallback) |
 | Write Stripe service that fetches from API | Developer | `stripeService.ts` (fetch from server_lambda) |
 | Configure Lambda env vars for API access | Devops | Terraform `lambda_environment` |
 | Write backend code (controllers, webhooks) | Developer | Stripe SDK + server_lambda secrets |
@@ -205,6 +209,6 @@ Use these exact key names when storing via the API:
 
 | Key Name | Purpose | Sensitive? |
 |----------|---------|-----------|
-| `STRIPE_SECRET_KEY` | Stripe secret or restricted API key | Yes (stored in SSM) |
-| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret | Yes (stored in SSM) |
-| `STRIPE_PUBLISHABLE_KEY` | Publishable key (frontend) | No (GitHub Variable, NOT via secrets API) |
+| `STRIPE_SECRET_KEY` | Stripe **secret key** (`sk_` — full access; restricted `rk_` keys are NOT supported) | Yes (server-side storage) |
+| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret (`whsec_`) | Yes (server-side storage) |
+| `STRIPE_PUBLISHABLE_KEY` | Publishable key (frontend) | No (`stripePublishableKey` in `forloop.json`, NOT via secrets API) |

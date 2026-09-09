@@ -80,54 +80,49 @@ When the user provides keys, verify the format **silently** (don't log them):
 sk_test_... →  Secret key (test mode)    ✓
 pk_test_... →  Publishable key (test mode) ✓
 sk_live_... →  Secret key (LIVE mode)      ⚠️  Warn: this is a live key!
-rk_test_... →  Restricted API key (test)   ✓ (preferred)
+rk_test_... →  Restricted key             ✗  NOT supported — ask for the full sk_ secret key
+whsec_...   →  Webhook signing secret     ✓ (collected later, after deploy)
 ```
 
 If a live key is provided, ask: "This appears to be a live key (sk_live_).
 Are you sure you want to use live mode now? We strongly recommend starting
 with test mode keys (sk_test_) during development."
 
-## Stage 3: (Recommended) Create a Restricted API Key
-
-Secret keys (`sk_`) have full access to the Stripe account. A restricted
-API key (`rk_`) is safer — it can only do what you permit.
-
-### Guide the User
+If a restricted key (`rk_`) is provided, explain why it won't work and ask
+for the full secret key instead:
 
 ```
-For better security, let's create a restricted API key instead of
-using the full secret key:
-
-1. On the API keys page, click "Create restricted key"
-2. Give it a name: "ForLoop Dev Access"
-3. Under "Permissions", select these specific permissions:
-
-   Core Resources:
-   ☑ Products — Read
-   ☑ Prices — Read
-   ☑ Checkout Sessions — Write
-   ☑ Customers — Write
-   ☑ Webhook Endpoints — Read & Write
-   ☑ Events — Read
-
-4. Click "Create key"
-5. Copy the key (starts with rk_test_)
+The ForLoop catalog sync pipeline needs the FULL secret key (sk_), not a
+restricted key. The platform creates and manages Products, Prices, Coupons,
+and Promotion Codes in your Stripe account on your behalf, which restricted
+keys can't do. Your key is stored encrypted server-side and only used for
+that synchronization and for backend checkout/webhook operations.
 ```
 
-The planner should explain the permission choices:
+## Stage 3: Full Secret Key Only (No Restricted Keys)
 
-| Permission | Why Needed |
-|------------|-----------|
-| Products — Read | To fetch product/price details |
-| Checkout Sessions — Write | To create checkout sessions |
-| Customers — Write | To create customer records (optional) |
-| Webhook Endpoints — Read & Write | To set up webhook URL (devops phase) |
-| Events — Read | To verify webhook event delivery |
+**Important platform rule:** `STRIPE_SECRET_KEY` must be a standard secret key
+starting with `sk_`. Restricted API keys (`rk_`) are rejected by the platform.
+Skip any guidance that suggests creating a restricted key.
+
+Why the full key is required:
+
+- The server-side catalog sync creates/updates/archives Stripe Products,
+  Prices, Coupons, and Promotion Codes — full access on those resources.
+- The backend creates Checkout Sessions and verifies webhooks.
+- The key never reaches the browser and never appears in build artifacts; it
+  lives in the sprint secrets store only.
+
+| Operation | Who Needs It |
+|-----------|-------------|
+| Product/Price/Coupon management (catalog sync) | Control plane via `server_lambda` secrets |
+| Checkout Session creation | User app backend (fetches secret at cold start) |
+| Webhook signature verification | User app backend (`STRIPE_WEBHOOK_SECRET`) |
+| Stripe.js bootstrap | Publishable key only (frontend build var) |
 
 ## Stage 4: (Later) Webhook Signing Secret
 
-This comes AFTER the devops agent creates the webhook endpoint. The planner
-creates a Phase 0b story for this.
+This comes AFTER the webhook endpoint is created (devops/developer phase).
 
 ```
 After we deploy and register the webhook endpoint, you'll need to
@@ -156,13 +151,9 @@ Planner:  "Go to Developers → API keys, share your test publishable
   ↓
 User:     Shares keys
   ↓
-Planner:  (Validates format silently, records "keys available" in
-           knowledge file, DOES NOT store the key values)
-  ↓
-Planner:  "For better security, would you like to create a restricted
-           API key with limited permissions?"
-  ↓
-User:     Yes/No (if yes, guide through restricted key creation)
+Planner:  (Validates format silently — sk_ required, rk_ rejected;
+           records "keys available" in knowledge file, DOES NOT
+           store the key values)
   ↓
 Planner:  Key gathering complete. Proceed to product catalog planning.
 ```
@@ -178,7 +169,6 @@ For the planner to guide users precisely:
 | Products | More → Product catalog | https://dashboard.stripe.com/test/products |
 | Webhooks | Developers → Webhooks | https://dashboard.stripe.com/test/webhooks |
 | Events (logs) | Developers → Events | https://dashboard.stripe.com/test/events |
-| Create restricted key | API keys page → "Create restricted key" | https://dashboard.stripe.com/test/apikeys/create |
 | Tax settings | Settings → Tax | https://dashboard.stripe.com/settings/tax |
 | Team access | Settings → Team | https://dashboard.stripe.com/settings/team |
 
@@ -209,33 +199,31 @@ After key gathering, add this to `~/.forloop/sprint-{id}/knowledge/`:
 
 ### Account
 - Stripe account: Confirmed (test mode)
-- Key type: {Secret key | Restricted API key}
-- Permissions: {Products Read, Checkout Sessions Write, etc.}
+- Key type: Full secret key (sk_) — required by the catalog sync pipeline
 
 ### Keys (status only — values NOT stored)
 - [x] Test publishable key (pk_test_)
-- [x] Test secret key (sk_test_) OR [x] Restricted key (rk_test_)
+- [x] Test secret key (sk_test_)
 - [ ] Webhook signing secret (will be collected after deploy)
 - [ ] Live keys (will be collected before production launch)
 
 ### Key Storage
-- Secret key → AWS SSM Parameter Store at /stripe/dev/secret-key (SecureString)
-- Publishable key → GitHub Actions Variable: STRIPE_PUBLISHABLE_KEY
-- Webhook secret → AWS SSM at /stripe/dev/webhook-secret (SecureString)
+- Secret key → sprint secrets via server_lambda (server-side encrypted)
+- Publishable key → `stripePublishableKey` in the repo's `forloop.json` (public; delivered at deploy through the deploy config API)
+- Webhook secret → sprint secrets via server_lambda
 ```
 
 ## Security Boundaries for the Planner
 
 The planner is a planning agent. It MUST follow these boundaries:
 
-| Action | Planner | Devops Agent |
+| Action | Planner | Devops/Developer Agents |
 |--------|---------|-------------|
 | Ask user for keys | ✅ Yes | — |
-| Validate key format (prefix check) | ✅ Yes | — |
+| Validate key format (sk_ prefix check) | ✅ Yes | ✅ (server enforces `sk_`) |
 | Record "keys confirmed" in knowledge | ✅ Yes | — |
-| Create SSM parameters (aws ssm put-parameter) | ❌ Never | ✅ Yes (Story 0a) |
+| Store keys via secrets API | ✅ Yes (PUT /api/opencode/sprints/:id/secrets/:key) | — |
 | Test keys against Stripe API | ❌ Never | ✅ (story implementation) |
-| Store key values anywhere | ❌ Never | ❌ Never (use SSM) |
-| Create .env file with keys | ❌ Never | ❌ Never (use SSM) |
+| Store key values in files/git | ❌ Never | ❌ Never |
+| Create .env file with keys | ❌ Never | ❌ Never |
 | Log key values in conversation | ❌ Never | — |
-| Set GitHub Actions variables | ❌ Never | ✅ (Story 3c) |

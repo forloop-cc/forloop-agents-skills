@@ -3,9 +3,10 @@ name: stripe-planning
 description: >
   Plan Stripe payment integration for ForLoop projects. Covers: gathering
   Stripe API keys and product/pricing requirements from the user, organizing
-  a product catalog spec, breaking the integration into implementable
-  stories (Stripe setup → Backend → Frontend → Testing), and producing
-  plan deliverables. This is a PLANNING-ONLY skill.
+  a canonical product catalog spec (product/offer/promotion model), and
+  breaking the integration into implementable stories (Stripe setup →
+  Admin Portal Product Management → Backend → Frontend → Testing). This is a
+  PLANNING-ONLY skill.
   Use when: the user wants to add payment features to their ForLoop project,
   mentions "Stripe", "payments", "checkout", "subscriptions", "pricing plans",
   or "billing". Also use when the user provides Stripe API keys.
@@ -14,12 +15,12 @@ description: >
   (use sprint-planning), or estimating story points (use story-points).
 license: MIT
 metadata:
-  version: "1.0.0"
+  version: "2.0.0"
   category: planning
   sources:
     - Stripe official skills (docs.stripe.com/skills)
     - ForLoop project-base template (.forloop/template/)
-    - AWS SSM Parameter Store
+    - ForLoop catalog sync planning docs (docs/user_application_development/01-12)
 triggers:
   - "stripe"
   - "payment"
@@ -50,12 +51,59 @@ and tester agents can execute.
 This is a **planning-only** skill. Do not write application code. The developer
 agent uses the `stripe-integration` skill to implement the stories you create.
 
+## ⚠️ Stripe Is An OPTIONAL Feature
+
+The Stripe product feature is **NOT a standard part of every ForLoop project**.
+It is only needed when the user wants to build an application that **sells
+products or services with payment** (one-time purchases, subscriptions, or
+both).
+
+- If the user's app does not sell anything → skip this skill entirely. Do not
+  propose Stripe, payments, pricing plans, or billing.
+- Only plan Stripe stories after the user explicitly asks for payment
+  functionality (sells products/services, subscriptions, checkout, billing).
+- Do NOT add Stripe stories to a general app plan "just in case".
+- Payment requirements may also come later in a project's life — plan them
+  only when they arrive, never by default.
+
+## Architecture You Are Planning For (READ FIRST)
+
+The ForLoop platform runs a **server-side catalog sync pipeline**. Do NOT plan
+stories around the old devops-driven Stripe bootstrap (devops creates Stripe
+Products/Prices → `stripe-prices.json` → `VITE_STRIPE_PRICE_*` env vars). That
+flow no longer exists.
+
+What actually happens:
+
+1. **Product authoring happens in the user application admin portal** — the
+   primary product-management surface. Admins create/update/archive products as
+   **change-sets**, or bulk-import CSV / Excel / JSON source files as **import
+   batches**. The user application backend mediates: it calls the ForLoop
+   `server_lambda` internal catalog-sync API with a short-lived service token.
+2. **The control-plane sync workflow executes server-side**: it normalizes,
+   validates, produces a preview diff, then on user confirmation applies
+   **Stripe first, user DynamoDB second** — creating/updating/archiving Stripe
+   Products, Prices, and Coupons/Promotion Codes, then writing runtime rows
+   (`CatalogProduct`, `CatalogOffer`, `CatalogPromotion`, category mappings).
+   Runtime rows become visible only when `status=active` and `syncStatus=ready`.
+3. **No Stripe IDs are hardwired into the app.** The frontend pricing page
+   renders from the runtime catalog API. Checkout posts a **local `offerKey`**;
+   the backend resolves `offerKey → stripePriceId` from the runtime catalog.
+   The only Stripe value in the frontend build is `VITE_STRIPE_PUBLISHABLE_KEY`
+   (delivered via the deploy config API from `forloop.json`'s
+   `stripePublishableKey`; null for non-Stripe projects).
+4. **Sprint space is a readiness/support surface only** — it shows setup
+   status, sync jobs, and links into the admin portal. It is not a second
+   authoring UI.
+
+Plan stories that match this architecture, not the legacy bootstrap.
+
 ## When to Use
 
+- The user is building an app that **sells products/services with payment**
 - User says they want to accept payments in their ForLoop project
 - User provides Stripe API keys or mentions they have a Stripe account
 - User asks for "checkout", "subscriptions", "pricing plans", "billing"
-- Planning a project that involves paid features, plans, or e-commerce
 
 **Payment features are OPTIONAL.** Not every ForLoop project needs Stripe.
 Only load this skill when the user explicitly requests payment functionality.
@@ -78,38 +126,41 @@ response before proceeding.
 **First**, determine if the user has a Stripe account. If not, guide them
 through registration at https://stripe.com/register (free, takes ~5 minutes).
 See `references/keys-from-user.md` for a complete walkthrough script including
-Dashboard navigation paths, test mode setup, and restricted key creation.
+Dashboard navigation paths, test mode setup, and key formats.
 
 | What to Ask | Why |
 |-------------|-----|
 | Do you have a Stripe account? | If no, guide to stripe.com/register |
-| Do you have your Stripe **secret key** and **publishable key**? | Required for backend (secret) and frontend (publishable) |
+| Do you have your Stripe **secret key** and **publishable key**? | Secret key for the sync pipeline; publishable key for Stripe.js |
 | Are you using test mode or live mode? | Determines `sk_test_` vs `sk_live_` |
-| Do you have a **restricted API key** with minimal permissions? | Better than full secret key; Stripe best practice |
 
-**How keys flow through the system:** The planner must understand this chain
-so it can explain key security to the user and create the right stories:
+**Key formats the platform accepts:** `STRIPE_SECRET_KEY` MUST be a full
+Stripe **secret key** starting with `sk_`. Restricted keys (`rk_`) are NOT
+supported — the sync pipeline creates/updates Products, Prices, Coupons, and
+Promotion Codes, which restricted keys cannot do. Never ask the user for an
+`rk_` key.
+
+**How keys flow through the system:**
 
 ```
 User provides keys → Planner stores via PUT /api/opencode/sprints/:id/secrets/:key
                               │
 User asks "how are my    ←── Planner explains: ←── server_lambda encrypts
-keys protected?"          "server_lambda handles  and stores in SSM
-                           all SSM — the project   (SecureString)
-                           Lambda never touches
-                           AWS directly."
-                                                       │
-                                           Developer writes code to fetch
-                                           from server_lambda API at
-                                           Lambda cold start
+keys protected?"          "server_lambda handles  and stores the secret
+                           all storage — the     (server-side only)
+                           project Lambda never
+                           touches AWS directly."
+                                                        │
+                                            The user app backend fetches
+                                            secrets from the server_lambda
+                                            API at cold start
 ```
 
-See `references/secret-flow.md` for the full SSM create/retrieve lifecycle
-diagram and the planner's talking points for security questions.
+See `references/secret-flow.md` for the full lifecycle diagram and the
+planner's talking points for security questions.
 
 **Important:** The planner never stores or logs keys. Note only that "keys are
 available" in the knowledge file. Key gathering guide: `references/keys-from-user.md`.
-SSM flow reference: `references/secret-flow.md`.
 
 ### Secret Key Names (CONTRACT WITH DEVELOPER)
 
@@ -119,7 +170,7 @@ agents — changing them breaks the integration.
 
 | Secret Key Name | What to Store |
 |-----------------|---------------|
-| `STRIPE_SECRET_KEY` | The user's Stripe secret key (`sk_test_...`) or restricted key (`rk_test_...`) |
+| `STRIPE_SECRET_KEY` | The user's Stripe **secret key** (`sk_test_...` / `sk_live_...`). Full access required by the catalog sync pipeline. |
 | `STRIPE_WEBHOOK_SECRET` | The webhook signing secret (`whsec_...`) — collected after webhook endpoint is created |
 
 **Store via:**
@@ -129,13 +180,15 @@ PUT /api/opencode/sprints/{sprintId}/secrets/STRIPE_WEBHOOK_SECRET
 ```
 
 **Do NOT:** add prefixes, suffixes, environment suffixes (dev/prd), or rename these keys.
-The developer agent's `stripeService.ts` looks for exactly `STRIPE_SECRET_KEY`.
 
-### Phase B: Product Catalog
+### Phase B: Product Catalog (Product / Offer / Promotion model)
 
-This is the core of Stripe planning. The user may sell **physical/digital
-products** (one-time purchase), **services/subscriptions** (recurring), or
-both. Ask about each category separately.
+The core of Stripe planning. The platform models the catalog with **three
+entities** — do not collapse everything into "a Stripe price with an env var":
+
+- **Product** = what the user sells (`productKey`, name, description, category, status)
+- **Offer** = how that product is billed (one-time or recurring monthly/yearly, `amountCents`, currency, trial)
+- **Promotion** = temporary discount layer on top of offers (percent/amount off, coupon code)
 
 **Step 1 — Identify what they sell:**
 
@@ -145,41 +198,42 @@ both. Ask about each category separately.
 | Do you sell subscription services (recurring billing)? | E.g., "Pro plan $29/month", "weekly coaching" |
 | Or both? | Many businesses mix both: a setup fee (one-time) + monthly plan (recurring) |
 
-**Step 2 — For each item/plan, elicit these fields:**
+**Step 2 — For each product/plan, elicit:**
 
 | What to Ask | Examples |
 |-------------|----------|
-| **Product/plan name** | "Pro Plan", "E-Book Bundle", "Premium Theme" |
-| **One-time or recurring?** | One-time purchase vs. monthly/yearly/weekly subscription |
-| **Price and currency** | $49 USD, €29 EUR, ¥2900 JPY |
-| **Any trial period (recurring only)?** | "14-day free trial" |
-| **Multiple billing intervals (recurring only)?** | Monthly AND annual for same plan |
-| **Any usage-based pricing?** | "Pay per API call" — routes to Metronome, not Stripe Prices |
+| Product name + stable key | "Pro Plan" → productKey `pro-plan` |
+| One-time or recurring? | One-time purchase vs. monthly/yearly subscription |
+| Price and currency | $49 USD, €29 EUR, ¥2900 JPY |
+| Multiple billing intervals? | Monthly AND annual for the same product → two offers |
+| Any trial period (recurring only)? | "14-day free trial" |
+| Any temporary promotions / coupon codes? | "SUMMER20 — 20% off first 3 months" |
+| Any usage-based pricing? | "Pay per API call" — out of scope for V1; note it |
 
-**Step 3 — Classify and organize:**
+**Step 3 — Classify into the canonical model** (one product → one or more
+offers; promotions separate):
 
-Divide the catalog into two groups. The devops agent creates each as
-the appropriate Stripe Price type:
+| Entity | Stable Key Pattern | Checkout Mode |
+|--------|--------------------|---------------|
+| One-time product → one-time offer | `billingType: one_time` | `mode: payment` |
+| Subscription product → recurring offer(s) | `billingType: recurring`, `interval: month\|year` | `mode: subscription` |
 
-| Group | Stripe Price Type | Checkout Mode |
-|-------|------------------|---------------|
-| One-time products | Price with NO `recurring` field | `mode: payment` |
-| Subscription services | Price WITH `recurring: { interval }` | `mode: subscription` |
-
-The backend auto-detects the correct mode by fetching the Price from Stripe
-(`stripe.prices.retrieve()`) before creating the Checkout Session.
-
-Organize the answers into a **product catalog spec**. See
-`references/product-catalog-spec.md` for the full template.
+Organize the answers into a **canonical product catalog spec**. See
+`references/product-catalog-spec.md` for the full schema (doc 04 canonical
+format: `products[]` with nested `offers[]`, optional `promotions[]`).
 
 ### Phase C: Checkout Flow
 
 | What to Ask | Notes |
 |-------------|-------|
-| Stripe-hosted Checkout (redirect) or embedded? | Hosted is simpler, embedded more customizable |
+| Stripe-hosted Checkout (redirect) or embedded? | Template ships hosted redirect (simpler); embedded is a later enhancement |
 | What happens after payment? | Success URL (thank-you page), cancel URL (back to pricing) |
 | Need to collect customer info beyond email? | Shipping address? Tax ID? |
 | Any post-purchase actions? | Grant access, send email, provision account |
+
+The checkout contract is `offerKey`-based: the frontend links to
+`/checkout?offerKey=pro-monthly` and the backend resolves the Stripe price ID
+server side. Never plan around client-supplied raw price IDs.
 
 ### Phase D: Environment & Infrastructure
 
@@ -187,128 +241,135 @@ Organize the answers into a **product catalog spec**. See
 |-------------|-------|
 | Tenant ID and project name? | Already known from space context, confirm |
 | Dev vs. production webhook URLs? | `api.{tenant}.forloop.cc/{env}/{project}/webhooks/stripe` |
+| Admin portal access? | The app's `/admin/catalog` page — confirm an admin token policy exists |
 
 ## Product Catalog Specification
 
-After gathering requirements, produce a product catalog spec. This is the single
-source of truth that the devops agent uses to create Products and Prices in
-Stripe via the API.
+After gathering requirements, you produce a canonical desired-state catalog.
+This file is the **desired state** — the sync pipeline compares it against
+Stripe + the runtime DynamoDB and produces a preview diff (create/update/
+archive/skip). It is NOT hand-fed to Stripe by a devops agent.
 
-**The planner writes `stripe-product-catalog.json` as the primary format.** The
-devops agent parses this JSON directly — no markdown parsing. A companion `.md`
-file is generated for user review.
+**The planner writes `stripe-product-catalog.json` as the primary format** using
+the canonical schema from `references/product-catalog-spec.md` (products with
+nested offers; optional promotions). A companion `.md` file is generated for
+user review.
+
+**How the catalog gets applied** (plan the handoff correctly):
+
+- The canonical JSON is uploaded into the sprint space files (`forloopSyncLocalToS3(sprintId={id})`) as the keeper copy.
+- The **admin portal import workspace** is where it enters the pipeline in practice: the user (or the developer agent during implementation) creates an import batch, uploads the JSON (or CSV/Excel) to staging S3 via a presigned URL, registers it, requests a preview, reviews the diff, and confirms apply.
+- Alternatively, small authoring edits happen directly in the admin portal as change-sets (create/update/archive), also previewed then applied through the same pipeline.
 
 **The planner filesystem is ephemeral (Lambda-based).** After writing files
-locally, upload to S3 via `forloopSyncLocalToS3(sprintId={id})`. The devops
-agent downloads them from S3.
+locally, always upload to S3 via `forloopSyncLocalToS3(sprintId={id})`.
 
-### Structure of a Product Catalog (JSON)
+### Catalog JSON (canonical shape — see reference for the full schema)
 
 ```json
 {
-  "project": "my-saas-app",
-  "stripeMode": "test",
-  "sprintId": 42,
-  "createdAt": "2026-08-09T14:00:00Z",
+  "version": 1,
+  "catalogKey": "sprint-42",
+  "projectKey": "my-saas-app",
+  "currency": "usd",
   "products": [
     {
+      "productKey": "pro-plan",
       "name": "Pro Plan",
-      "type": "recurring",
       "description": "Full access to all Pro features",
-      "metadata": { "product_tier": "pro" },
-      "prices": [
-        { "nickname": "Pro Monthly", "unit_amount": 2900, "currency": "usd",
-          "recurring": { "interval": "month", "trial_period_days": 14 } },
-        { "nickname": "Pro Yearly", "unit_amount": 29000, "currency": "usd",
-          "recurring": { "interval": "year" } }
+      "status": "active",
+      "category": "subscription",
+      "offers": [
+        { "offerKey": "pro-monthly", "name": "Pro Monthly", "billingType": "recurring", "interval": "month", "amountCents": 2900, "currency": "usd", "trialDays": 14 },
+        { "offerKey": "pro-yearly", "name": "Pro Yearly", "billingType": "recurring", "interval": "year", "amountCents": 29000, "currency": "usd" }
       ]
     },
     {
+      "productKey": "setup-service",
       "name": "One-Time Setup",
-      "type": "one_time",
       "description": "Professional setup and configuration",
-      "metadata": { "product_type": "one_time" },
-      "prices": [
-        { "nickname": "Setup Service", "unit_amount": 49900, "currency": "usd" }
+      "status": "active",
+      "category": "service",
+      "offers": [
+        { "offerKey": "setup-once", "name": "Setup Service", "billingType": "one_time", "amountCents": 49900, "currency": "usd" }
       ]
+    }
+  ],
+  "promotions": [
+    {
+      "promotionKey": "summer-20",
+      "name": "Summer 20",
+      "code": "SUMMER20",
+      "discountType": "percent",
+      "percentOff": 20,
+      "duration": "once",
+      "active": true,
+      "appliesTo": { "offerKeys": ["pro-monthly", "pro-yearly"] }
     }
   ]
 }
 ```
 
-### Stripe Entity Relationship
+### Key planning rules
 
-```
-Product (the "what": "Pro Plan")
-  └── Price (the "how much": $29/mo, $290/yr, €25/mo)
-        └── Checkout Session (the "who buys": customer + payment method)
-              └── PaymentIntent (settlement)
-```
-
-**Key rule for the planner:** One Product per plan/ tier. Multiple Prices on the
-same Product only for variants of the same plan (monthly vs. yearly, different
-currencies). Do NOT put different tiers on the same Product.
-
-### Spec Format
-
-Create the catalog JSON file at
-`~/.forloop/sprint-{id}/plan/stripe-product-catalog.json`. Also generate a
-human-readable `stripe-product-catalog.md` for user review.
-
-**Upload both to S3** — the planner filesystem is ephemeral:
-
-```
-forloopSyncLocalToS3(sprintId={id})
-```
-
-See `references/product-catalog-spec.md` for the complete JSON schema, markdown
-template, and devops agent processing instructions.
+- **1 product → many offers**, not "1 product → 1 price". Monthly + yearly
+  variants of the same product are offers of one product.
+- Stable local keys (`productKey`, `offerKey`, `promotionKey`) are the identity
+  contract; Stripe IDs are an implementation detail resolved at apply time.
+- Permanent price changes create a NEW Stripe price (and archive the old
+  offer); temporary discounts are Promotions, never mutations of the base price.
+- Split into separate products only when the business meaning differs (e.g.
+  lifetime license vs. subscription).
 
 ## Story Breakdown
 
 Break Stripe integration into these phases. Each phase becomes one or more
-stories, assigned to the appropriate agent. Stories must be created in
-dependency order.
+stories, assigned to the appropriate agent, in dependency order.
 
 ### Story Dependency Map
 
 ```
-Phase 0: Stripe Setup (Planner + Devops)
+Phase 0: Setup (Planner + Developer)
     │
-    ├── Story 0a: Store Stripe keys via server_lambda secrets API (Planner)
-    └── Story 0b: Create Products & Prices in Stripe (Devops)
+    ├── Story 0a: Store Stripe keys via secrets API (Planner)
+    ├── Story 0b: Write canonical product catalog spec (Planner)
+    └── Story 0c: Verify admin portal catalog readiness (Developer)
          │
-Phase 1: Backend (Developer)
+Phase 1: Product Management via Admin Portal (Developer)
     │
-    ├── Story 1a: Create stripeService.ts (fetch secrets from server_lambda API)
-    ├── Story 1b: Create payment model + service (DynamoDB)
-    ├── Story 1c: Create payment controller + routes
-    ├── Story 1d: Create webhook controller + raw body route
-    └── Story 1e: Update app.ts for webhook pre-json handling
+    ├── Story 1a: Wire/verify admin catalog authoring (change-sets) in the template
+    ├── Story 1b: Wire/verify bulk import workspace (import batches) in the admin portal
+    ├── Story 1c: Load the planner's catalog through preview → confirm apply
+    └── Story 1d: Admin sync jobs/retry views
          │
-Phase 2: Frontend (Developer)
+Phase 2: Backend Runtime Surfaces (Developer)
     │
-    ├── Story 2a: Add Stripe.js + React Stripe deps
-    ├── Story 2b: Create checkout page (Stripe-hosted redirect)
-    ├── Story 2c: Add checkout route to App.tsx
-    └── Story 2d: Create success/cancel pages
+    ├── Story 2a: runtime catalog read APIs (products/offers/promotions)
+    ├── Story 2b: checkout by offerKey (server-side price resolution) + payment record
+    ├── Story 2c: Stripe webhook (raw body + signature verification)
+    └── Story 2d: stripeService fetching secret/webhook secret from server_lambda
          │
-Phase 3: Infrastructure (Devops)
+Phase 3: Frontend (Developer)
     │
-    ├── Story 3a: Add server_lambda API env vars to Terraform (SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, FORLOOP_API_TOKEN)
-    └── Story 3b: Add Stripe build-time env vars to deploy.yml (publishable key + price IDs)
+    ├── Story 3a: dynamic pricing page from runtime catalog
+    ├── Story 3b: checkout page via ?offerKey=
+    └── Story 3c: success page + Stripe.js bootstrap (publishable key)
          │
-Phase 4: Testing (Tester)
+Phase 4: Infrastructure (Devops)
     │
-    ├── Story 4a: Write backend unit tests (mock Stripe client)
-    ├── Story 4b: Write E2E test stubs for checkout flow
-    └── Story 4c: Post-deploy E2E verification with Stripe test mode
+    └── Story 4a: Lambda env vars (SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, FORLOOP_API_TOKEN,
+                   ADMIN_API_TOKEN) + publishable-key GitHub variable
+         │
+Phase 5: Testing (Tester)
+    │
+    ├── Story 5a: Backend unit tests (checkout offerKey resolution, webhook verification)
+    ├── Story 5b: E2E test stubs (offerKey checkout)
+    └── Story 5c: Post-deploy verification with Stripe test mode
 ```
 
 ### Story Templates
 
 Use `forloopStoryTemplate` with `templateSlug="basic-task"` for all stories.
-Here are the recommended story descriptions for each phase:
 
 #### Phase 0 Stories (Planner)
 
@@ -318,14 +379,15 @@ Here are the recommended story descriptions for each phase:
 Title: Store Stripe API keys in space secrets via ForLoop secrets API
 
 Description:
-As a planner, I want the user's Stripe secret key and webhook signing
-secret stored securely via the server_lambda secrets API, so that the
-project Lambda can retrieve them at runtime without direct AWS SSM access.
+As a planner, I want the user's Stripe secret key (sk_...) and webhook signing
+secret stored securely via the server_lambda secrets API, so that the catalog
+sync pipeline and the project Lambda can retrieve them at runtime.
 
 Acceptance Criteria:
 - Given the user's Stripe test keys are available
 - When planner calls PUT /api/opencode/sprints/{id}/secrets/STRIPE_SECRET_KEY
-- Then the secret is stored encrypted in SSM (server_lambda handles this)
+- Then the secret is stored server-side (server_lambda handles encryption/storage)
+- And the stored value starts with sk_ (full secret key, NOT rk_)
 - And PUT /api/opencode/sprints/{id}/secrets/STRIPE_WEBHOOK_SECRET also succeeds
 - And secrets:write scope is present on the API token
 - And keys are NOT committed to any git repository
@@ -335,77 +397,76 @@ Priority: high
 Assignee: forLoopPlanner
 ```
 
-#### Phase 0 Stories (Devops)
-
-**Story 0b: Create Stripe Products and Prices**
+**Story 0b: Write the canonical product catalog spec**
 
 ```
-Title: Create Stripe Products and Prices from product catalog spec
+Title: Write the canonical product catalog spec (product/offer/promotion)
 
 Description:
-As a project owner, I want Products and Prices created in Stripe matching
-the product catalog specification, so that the checkout flow can reference
-real price IDs.
+As a planner, I want the catalog captured in the canonical desired-state format
+(products with nested offers, optional promotions, stable keys), so that it can
+be loaded through the admin portal import pipeline for preview and apply.
 
 Acceptance Criteria:
-- Given the product catalog JSON at plan/stripe-product-catalog.json
-- When devops reads the file from space S3
-- Then each product is created in Stripe with correct name/description/metadata
-- And each price is created with correct unit_amount, currency, and interval (recurring only)
-- And one-time products have NO recurring field (Stripe creates payment mode)
-- And recurring products have the recurring block (Stripe creates subscription mode)
-- And real Stripe price IDs are recorded in stripe-prices.json with env var mapping
-- And stripe-prices.json is uploaded to the space S3 bucket
-
-Points: 3
-Priority: high
-Assignee: forLoopDevops
-Dependencies: Story 0a (keys must exist first)
-```
-
-#### Phase 1 Stories (Developer)
-
-**Story 1a: Create Stripe service (fetch secrets from server_lambda API)**
-
-```
-Title: Create stripeService.ts that retrieves keys from server_lambda secrets API
-
-Description:
-As a developer, I want the Stripe Node.js SDK installed and a service that
-fetches the secret key from the server_lambda secrets API at cold start,
-so that the backend can make Stripe API calls without needing direct SSM access.
-
-Acceptance Criteria:
-- Given the backend directory
-- When npm install is run
-- Then package.json stripe dependency is installed (pre-configured in template)
-- And src/services/stripeService.ts exports getStripeClient() as an async function
-- And the service fetches secrets from SERVER_LAMBDA_URL/api/opencode/sprints/{id}/secrets
-- And secrets are cached in memory after first fetch (singleton pattern)
-- And the client uses the latest Stripe API version (check Stripe skill doc)
+- Given the user's product/pricing answers
+- When planner writes stripe-product-catalog.json (doc 04 schema)
+- Then every product has a stable productKey and at least one offer with offerKey
+- And offers carry billingType (one_time|recurring), amountCents, currency
+- And recurring offers carry interval (month|year)
+- And promotions (if any) are separate entities with discountType + appliesTo
+- And a human-readable stripe-product-catalog.md is generated for review
+- And both files are uploaded to the sprint S3 bucket
 
 Points: 2
 Priority: high
-Assignee: forLoopDeveloper
+Assignee: forLoopPlanner
 ```
 
-**Story 1b: Create payment model and service**
+#### Phase 1 Stories (Developer) — Admin Portal Product Management
+
+**Story 1a: Admin catalog authoring (change-sets)**
 
 ```
-Title: Create payment DynamoDB model and paymentService.ts
+Title: Wire the admin portal catalog authoring flow (change-sets)
 
 Description:
-As a developer, I want payment records stored in DynamoDB using the
-existing OneTable single-table design, so that completed payments are
-persisted and queryable.
+As an admin, I want to create/update/archive products in the app's admin
+portal as change-sets, so that Stripe and the runtime catalog are updated
+through the server-side sync pipeline (preview then apply) instead of
+direct Stripe calls.
 
 Acceptance Criteria:
-- Given the existing DynamoDB table (pk/sk single-table)
-- When paymentService.create() is called with checkout session data
-- Then a payment record is stored with pk=payment#{id}, sk=payment#
-- And the record includes stripeId, amount, currency, status, customerEmail
-- And paymentService.findByStripeId() retrieves the payment
-- And paymentService.updateStatus() updates the payment status
+- Given the project-base template's /admin/catalog backend routes
+- When an admin creates/updates/archives a product
+- Then a change-set (draft) is recorded (never a direct Stripe mutation)
+- And POST /admin/catalog/preview starts a server-side preview job
+- And POST /admin/catalog/apply confirms the previewed job
+- And the backend authenticates to server_lambda with the short-lived service token
+- And the X-Actor headers carry the real admin identity
+
+Points: 3
+Priority: high
+Assignee: forLoopDeveloper
+Dependencies: Story 0a (secret) — and 0c (client registration readiness)
+```
+
+**Story 1b: Bulk import workspace**
+
+```
+Title: Bulk import workspace in the admin portal (import batches)
+
+Description:
+As an admin, I want to upload CSV/Excel/JSON product sources into an import
+batch, register them, and request a preview through the sync pipeline, so the
+planner's catalog file (or a spreadsheet) becomes the runtime catalog.
+
+Acceptance Criteria:
+- Given /admin/catalog/import-batches routes in the template backend
+- When an admin creates a batch and uploads a source file
+- Then the backend requests a presigned PUT URL from server_lambda staging
+- And the file is uploaded straight to S3 from the browser, then registered with checksum
+- And POST /import-batches/:id/preview queues a preview job
+- And the batch shows its files, manifest version, and preview/apply job ids
 
 Points: 3
 Priority: high
@@ -413,332 +474,328 @@ Assignee: forLoopDeveloper
 Dependencies: Story 1a
 ```
 
-**Story 1c: Create payment controller and routes**
+**Story 1c: First catalog load (planner catalog → applied)**
 
 ```
-Title: Create payment controller and /payments routes
+Title: Load the planned catalog: preview, review, and confirm apply
 
 Description:
-As a developer, I want POST /payments/checkout and GET /payments/status/:id
-endpoints, so that the frontend can create Stripe Checkout Sessions and
-check payment status.
+As the project owner, I want the planned stripe-product-catalog.json imported
+through the admin portal (JSON import batch), previewed, and applied, so
+Stripe and the runtime DynamoDB catalog reflect the plan.
 
 Acceptance Criteria:
-- Given a valid priceId, successUrl, and cancelUrl
-- When POST /payments/checkout is called
-- Then a Stripe Checkout Session is created
-- And the response returns { success: true, data: { url: "https://checkout.stripe.com/..." } }
-- When GET /payments/status/:sessionId is called
-- Then the response returns the session payment_status
+- Given the planner's stripe-product-catalog.json (sprint S3)
+- When an import batch is created with the JSON file and previewed
+- Then the preview shows create/update/archive/skip counts
+- And no real mutations happen before confirmation
+- When apply is confirmed
+- Then Stripe products/prices are created first, runtime rows second
+- And completed sync items show status=active + syncStatus=ready
 
 Points: 2
-Priority: high
-Assignee: forLoopDeveloper
-Dependencies: Story 1a
-```
-
-**Story 1d: Create Stripe webhook handler with raw body**
-
-```
-Title: Create Stripe webhook controller and route with raw body handling
-
-Description:
-As a developer, I want Stripe webhook events (.checkout.session.completed,
-etc.) verified and processed, so that payments are recorded in DynamoDB
-when Stripe confirms them.
-
-Acceptance Criteria:
-- Given a Stripe webhook POST with valid Stripe-Signature header
-- When the webhook endpoint receives the raw body
-- Then stripe.webhooks.constructEvent() verifies the signature
-- And checkout.session.completed events persist payment records via paymentService
-- And invalid signatures return 400
-- And the route uses express.raw() before express.json()
-
-Points: 3
 Priority: high
 Assignee: forLoopDeveloper
 Dependencies: Stories 1a, 1b
 ```
 
-**Story 1e: Update app.ts for webhook ordering**
+**Story 1d: Sync jobs visibility in the admin portal**
 
 ```
-Title: Update app.ts to mount webhook route before express.json()
+Title: Sync jobs list/detail/retry views in the admin portal
 
 Description:
-As a developer, I want the Stripe webhook route mounted before
-express.json() middleware, so that the raw body is preserved for
-signature verification while all other routes use JSON parsing.
+As an admin, I want to see sync job status, item-level results, and retry
+failed items from the admin portal, so product-management outcomes are
+visible where authoring happens.
 
 Acceptance Criteria:
-- Given the Express app in src/app.ts
-- When the app is created
-- Then /webhooks/stripe is mounted with express.raw() before express.json()
-- And /payments routes are mounted on the router after express.json()
-- And health and user routes continue to work normally
-
-Points: 1
-Priority: high
-Assignee: forLoopDeveloper
-Dependencies: Stories 1c, 1d
-```
-
-#### Phase 2 Stories (Developer)
-
-**Story 2a: Add frontend Stripe dependencies**
-
-```
-Title: Add @stripe/react-stripe-js and @stripe/stripe-js dependencies
-
-Description:
-As a developer, I want Stripe.js and React Stripe.js installed in the
-frontend, so that the checkout page can use Stripe Elements.
-
-Acceptance Criteria:
-- Given the frontend directory
-- When npm install is run
-- Then package.json @stripe/react-stripe-js and @stripe/stripe-js deps are installed (pre-configured in template)
-- And src/lib/stripe.ts exports getStripe() that calls loadStripe()
-- And getStripe() reads VITE_STRIPE_PUBLISHABLE_KEY from env
-
-Points: 1
-Priority: medium
-Assignee: forLoopDeveloper
-```
-
-**Story 2b: Create checkout page**
-
-```
-Title: Create checkout page with Stripe hosted checkout flow
-
-Description:
-As a shopper, I want to click "Subscribe" on the pricing page and be
-redirected to Stripe's secure checkout, so that I can enter my payment
-details safely.
-
-Acceptance Criteria:
-- Given a user visits /checkout
-- When they click the checkout button
-- Then POST /payments/checkout is called with the appropriate priceId
-- And the user is redirected to the Stripe Checkout URL
-- And on the success URL, the session_id query param is preserved
-- And errors are displayed to the user if checkout creation fails
-
-Points: 3
-Priority: medium
-Assignee: forLoopDeveloper
-Dependencies: Story 2a, and Story 1c (backend /payments/checkout must exist)
-```
-
-**Story 2c: Add checkout route to App.tsx**
-
-```
-Title: Add /checkout route to React Router
-
-Description:
-As a developer, I want the checkout page accessible at /checkout, so that
-pricing pages can link to it.
-
-Acceptance Criteria:
-- Given the React Router in App.tsx
-- When navigating to /checkout
-- Then the CheckoutPage component renders
-
-Points: 1
-Priority: medium
-Assignee: forLoopDeveloper
-Dependencies: Story 2b
-```
-
-**Story 2d: Create success page and pricing return flow**
-
-```
-Title: Create payment success page and pricing return flow
-
-Description:
-As a customer, I want to see a confirmation page after successful payment
-or return to pricing if I cancel, so that I know the transaction status.
-
-Acceptance Criteria:
-- Given a user returns from Stripe with session_id=xxx
-- When /success?session_id=xxx loads
-- Then the page calls GET /payments/status/:sessionId
-- And displays "Payment successful" or "Payment pending" based on status
-- Given a user cancels on the Stripe checkout page
-- Then Stripe redirects them back to /pricing
-- And the pricing page lets them choose another plan
+- Given /admin/catalog/jobs and /jobs/:id/items
+- Then the admin portal lists jobs with status and counts
+- And item-level stripe/db status and errors are visible
+- And retry is offered only for failed retryable items
 
 Points: 2
 Priority: medium
 Assignee: forLoopDeveloper
-Dependencies: Story 2c, and Story 1c (backend status endpoint)
+Dependencies: Story 1a
 ```
 
-#### Phase 3 Stories (Devops)
+#### Phase 2 Stories (Developer) — Backend Runtime
 
-**Story 3a: Add server_lambda API env vars to Terraform**
+**Story 2a: Ready-only runtime catalog APIs**
 
 ```
-Title: Add server_lambda API environment variables to Terraform lambda_environment
+Title: Runtime catalog read APIs from the user DynamoDB table
 
 Description:
-As a devops engineer, I want SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, and
-FORLOOP_API_TOKEN passed to the Lambda via Terraform, so the backend can
-fetch secrets from the server_lambda's secrets API at runtime.
+As a shopper, I want the app to serve catalog data backed by the synced
+runtime rows, so the frontend never ships hardcoded prices.
+
+Acceptance Criteria:
+- Given GET /catalog/products (+ filters categoryKey, featured)
+- Then only rows with status=active AND syncStatus=ready are returned
+- And GET /catalog/products/:productKey returns offers/assets for one product
+- And GET /catalog/promotions/active returns active ready promotions
+- And archived or partially-synced rows are never exposed
+
+Points: 2
+Priority: high
+Assignee: forLoopDeveloper
+Dependencies: Story 1c (rows must exist)
+```
+
+**Story 2b: Checkout by offerKey**
+
+```
+Title: POST /payments/checkout accepts offerKey and resolves the Stripe price server side
+
+Description:
+As a shopper, I want checkout to use the app's stable offer identifiers, so the
+frontend never holds raw Stripe price IDs.
+
+Acceptance Criteria:
+- Given POST /payments/checkout with { offerKey, successUrl, cancelUrl }
+- Then the backend resolves offerKey → CatalogOffer.stripePriceId
+- And inactive or not-ready offers are rejected
+- And checkout mode is derived from the resolved price (payment vs subscription)
+- And the response returns the hosted Checkout URL
+
+Points: 3
+Priority: high
+Assignee: forLoopDeveloper
+Dependencies: Stories 2a, 2d
+```
+
+**Story 2c: Stripe webhook with raw body verification**
+
+```
+Title: Stripe webhook route with raw body and signature verification
+
+Description:
+As an operator, I want verified Stripe webhook events to drive local payment
+state, so payments are recorded from Stripe truth, not redirect signals.
+
+Acceptance Criteria:
+- Given POST /webhooks/stripe mounted with express.raw() BEFORE express.json()
+- When checkout.session.completed arrives with a valid Stripe-Signature
+- Then stripe.webhooks.constructEvent() verifies it and a payment record is upserted
+- And invalid signatures return 400
+- And checkout.session.expired marks the payment expired
+
+Points: 3
+Priority: high
+Assignee: forLoopDeveloper
+Dependencies: Story 2b (payment model)
+```
+
+**Story 2d: Stripe client bootstrap from sprint secrets**
+
+```
+Title: stripeService fetches STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET from server_lambda
+
+Description:
+As a developer, I want the backend Stripe client built from the sprint secrets
+API at cold start, so no Stripe secret exists in code or build artifacts.
+
+Acceptance Criteria:
+- Given SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, FORLOOP_API_TOKEN (secrets:read)
+- When stripeService initializes
+- Then it fetches sprint secrets over HTTPS and caches them in memory
+- And getStripeClient() builds the SDK client from STRIPE_SECRET_KEY (sk_)
+- And getWebhookSecret() returns STRIPE_WEBHOOK_SECRET
+
+Points: 2
+Priority: high
+Assignee: forLoopDeveloper
+Dependencies: Story 0a
+```
+
+#### Phase 3 Stories (Developer) — Frontend
+
+**Story 3a: Dynamic pricing page**
+
+```
+Title: Pricing page renders the runtime catalog (no static price cards)
+
+Description:
+As a shopper, I want pricing rendered from the synced catalog with category
+grouping and one-time/monthly/yearly offers, so the storefront always matches
+the catalog.
+
+Acceptance Criteria:
+- Given GET /catalog/products
+- Then the pricing page renders products, offers (amount, interval, trial), badges
+- And active promotions are displayed where applicable
+- And NO VITE_STRIPE_PRICE_* env vars are read (removed from the template)
+- And archived/not-ready items never render
+
+Points: 3
+Priority: high
+Assignee: forLoopDeveloper
+Dependencies: Story 2a
+```
+
+**Story 3b: Checkout page (offerKey)**
+
+```
+Title: /checkout?offerKey=… page that posts offerKey to the backend
+
+Description:
+As a shopper, I want to reach Stripe-hosted checkout from a pricing card, so
+the app never handles card data.
+
+Acceptance Criteria:
+- Given /checkout?offerKey=pro-monthly
+- Then POST /payments/checkout sends { offerKey, successUrl, cancelUrl }
+- And the user is redirected to the returned hosted checkout URL
+- And the session_id template in successUrl resolves after return
+- And a missing/invalid offerKey produces a clear error
+
+Points: 2
+Priority: high
+Assignee: forLoopDeveloper
+Dependencies: Stories 3a, 2b
+```
+
+**Story 3c: Success page + Stripe.js bootstrap**
+
+```
+Title: Success page polls payment status; Stripe.js initializes from the publishable key
+
+Description:
+As a customer, I want payment confirmation after returning from Stripe, with
+Stripe.js initialized from deployment config.
+
+Acceptance Criteria:
+- Given /success?session_id=xxx
+- Then GET /payments/status/:sessionId shows paid/pending/failed states
+- And src/lib/stripe.ts loads Stripe.js from VITE_STRIPE_PUBLISHABLE_KEY only
+- And no other Stripe IDs appear in frontend build config
+
+Points: 2
+Priority: medium
+Assignee: forLoopDeveloper
+Dependencies: Story 3b
+```
+
+#### Phase 4 Stories (Devops)
+
+**Story 4a: Runtime + build env configuration**
+
+```
+Title: Configure Lambda env vars and the publishable-key config
+
+Description:
+As a devops engineer, I want the backend to reach server_lambda and the
+frontend to bootstrap Stripe.js, without any Stripe secret in CI.
 
 Acceptance Criteria:
 - Given infra/project/main.tf
-- When lambda_environment is configured
-- Then SERVER_LAMBDA_URL is set (points to the ForLoop server Lambda)
-- And FORLOOP_SPRINT_ID is set to the current space ID
-- And FORLOOP_API_TOKEN is set (with secrets:read scope) and marked sensitive=true
-- And no SSM IAM policy is needed (server_lambda handles SSM access)
+- Then SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, FORLOOP_API_TOKEN
+      (secrets:read + catalog:admin scopes, sensitive) are set on the Lambda
+- And ADMIN_API_TOKEN (+ ADMIN_CATALOG_SCOPES) protects /admin/catalog
+- And forloop.json declares stripePublishableKey (the public pk_ value)
+- And deploy.yml passes only VITE_STRIPE_PUBLISHABLE_KEY (from the deploy
+      config API; empty/null when the project has no Stripe integration)
+- And no VITE_STRIPE_PRICE_* variables remain in CI or the frontend
 
 Points: 2
 Priority: high
 Assignee: forLoopDevops
+Dependencies: Story 0a
 ```
 
-**Story 3b: Add Stripe build-time env vars to CI/CD**
+#### Phase 5 Stories (Tester)
+
+**Story 5a: Backend unit tests**
 
 ```
-Title: Add VITE_STRIPE_PUBLISHABLE_KEY and VITE_STRIPE_PRICE_* to frontend build
+Title: Unit tests for offerKey checkout resolution and webhook verification
 
 Description:
-As a devops engineer, I want the Stripe publishable key and all real Stripe
-price IDs set as Vite build-time environment variables in deploy.yml, so
-the frontend PricingPage can reference real Stripe price IDs after build.
+As a tester, I want backend unit tests that prove offerKey resolves against
+ready catalog rows and webhook signatures are verified, so regressions to the
+legacy priceId flow are caught.
 
 Acceptance Criteria:
-- Given the deploy.yml workflow
-- When the frontend build step runs
-- Then VITE_STRIPE_PUBLISHABLE_KEY is set from GitHub Action Variables
-- And VITE_STRIPE_PRICE_* vars are set for each product/plan from stripe-prices.json
-- And the built frontend PricingPage shows the correct priceId per plan
-- And products without a configured priceId are hidden
-- And GitHub Variables are used (not Secrets — price IDs are not sensitive)
-
-Points: 1
-Priority: medium
-Assignee: forLoopDevops
-```
-
-#### Phase 4 Stories (Tester)
-
-**Story 4a: Write backend unit tests**
-
-```
-Title: Write backend unit tests for Stripe services and controllers
-
-Description:
-As a tester, I want unit tests for stripeService, paymentController, and
-stripeWebhookController, so that Stripe integration logic is verified
-before deployment.
-
-Acceptance Criteria:
-- Given Stripe SDK is mocked with jest.mock('stripe')
-- When paymentController.createCheckoutSession() runs
-- Then a mocked checkout session URL is returned
-- When stripeWebhookController handles a valid event
-- Then constructEvent is called and payment is recorded
-- When signature is invalid
-- Then 400 is returned
-- And test coverage for Stripe files is >= 80%
+- Given a CatalogOffer row (ready) the checkout resolves its stripePriceId
+- And inactive/not-ready offers are rejected
+- And constructEvent is called for webhook verification (mock SDK)
+- And invalid signatures produce 400
 
 Points: 3
 Priority: medium
 Assignee: forLoopTester
-Dependencies: Phase 1 stories
+Dependencies: Phase 2 stories
 ```
 
-**Story 4b: Write E2E test stubs**
+**Story 5b: E2E stubs**
 
 ```
-Title: Write Playwright E2E test stubs for checkout flow
+Title: Playwright E2E stub for offerKey checkout
 
 Description:
-As a tester, I want E2E test stubs at tests/e2e/story_stripe_checkout.spec.ts,
-so that the post-deploy verification can validate the checkout flow.
+As a tester, I want an E2E stub at tests/e2e/story_stripe_checkout.spec.ts that
+posts an offerKey and expects a hosted Stripe URL, so post-deploy verification
+covers the real contract.
 
 Acceptance Criteria:
-- Given a deployed backend with DEPLOYED_API_URL
-- When the stub creates a checkout session via POST /payments/checkout
-- Then response.status is 200 and response.data.url is non-null
-- And the test verifies the returned URL points to Stripe's checkout domain
-- And the file name matches the existing story_*.spec.ts Playwright pattern
+- Given a deployed backend, POST /payments/checkout with a known offerKey
+- Then result.data.url points at https://checkout.stripe.com
+- And a missing offerKey returns 400
 
 Points: 2
 Priority: medium
 Assignee: forLoopTester
-Dependencies: Phase 1 and 2 stories
+Dependencies: Phase 2+3 stories
 ```
 
-**Story 4c: Post-deploy E2E verification**
+**Story 5c: Post-deploy verification**
 
 ```
-Title: Post-deploy E2E verification of Stripe checkout flow
+Title: Post-deploy E2E verification in Stripe test mode
 
 Description:
-As a tester, I want to verify the deployed checkout flow end-to-end using
-Stripe test mode, so that payment collection is confirmed to work in
-production-like conditions.
+As a tester, I want the deployed app verified end-to-end with Stripe test
+cards, including webhook processing.
 
 Acceptance Criteria:
-- Given the deployed frontend and backend URLs
-- When E2E tests run via [e2e story] commit tag
-- Then the checkout page loads and displays the checkout button
-- And clicking checkout redirects to Stripe (stripe.com domain)
-- And test uses Stripe test card numbers (4242 4242 4242 4242)
-- And webhook endpoint receives and processes the test event
+- Given the deployed frontend/backend URLs
+- Then the pricing page renders synced offers
+- And checkout redirects to Stripe (test card 4242 4242 4242 4242)
+- And the webhook records the payment locally
+- And the admin portal shows the completed sync job
 
 Points: 3
 Priority: medium
 Assignee: forLoopTester
-Dependencies: All Phase 1, 2, and 3 stories
+Dependencies: All prior phases
 ```
 
 ## Summarized Story List
 
 | # | Title | Agent | Points | Depends On |
 |---|-------|-------|--------|------------|
-| 0a | Store Stripe keys via secrets API | Planner | 1 | — |
-| 0b | Create Products & Prices in Stripe | Devops | 3 | 0a |
-| 1a | Create stripeService.ts (server_lambda API) | Developer | 2 | — |
-| 1b | Payment model + service (DynamoDB) | Developer | 3 | 1a |
-| 1c | Payment controller + routes | Developer | 2 | 1a |
-| 1d | Webhook controller + raw body route | Developer | 3 | 1a, 1b |
-| 1e | Update app.ts for webhook ordering | Developer | 1 | 1c, 1d |
-| 2a | Frontend Stripe.js dependencies | Developer | 1 | — |
-| 2b | Checkout page | Developer | 3 | 2a, 1c |
-| 2c | Add /checkout route to App.tsx | Developer | 1 | 2b |
-| 2d | Success page + pricing return flow | Developer | 2 | 2c, 1c |
-| 3a | Terraform lambda_environment (API vars) | Devops | 2 | 0a |
-| 3b | Stripe build-time env vars (publishable key + price IDs) in deploy.yml | Devops | 1 | — |
-| 4a | Backend unit tests | Tester | 3 | Phase 1 |
-| 4b | E2E test stubs | Tester | 2 | Phase 1+2 |
-| 4c | Post-deploy E2E verification | Tester | 3 | All |
+| 0a | Store Stripe keys (sk_ only) via secrets API | Planner | 1 | — |
+| 0b | Canonical product catalog spec | Planner | 2 | — |
+| 1a | Admin catalog authoring (change-sets) | Developer | 3 | 0a |
+| 1b | Bulk import workspace (import batches) | Developer | 3 | 1a |
+| 1c | First catalog load: preview → apply | Developer | 2 | 1a, 1b |
+| 1d | Admin sync jobs/retry views | Developer | 2 | 1a |
+| 2a | Runtime catalog read APIs | Developer | 2 | 1c |
+| 2b | Checkout by offerKey | Developer | 3 | 2a, 2d |
+| 2c | Webhook raw body + verification | Developer | 3 | 2b |
+| 2d | stripeService (secrets via server_lambda) | Developer | 2 | 0a |
+| 3a | Dynamic pricing page | Developer | 3 | 2a |
+| 3b | Checkout page (?offerKey=) | Developer | 2 | 3a, 2b |
+| 3c | Success page + Stripe.js bootstrap | Developer | 2 | 3b |
+| 4a | Lambda env vars + publishable key variable | Devops | 2 | 0a |
+| 5a | Backend unit tests | Tester | 3 | Phase 2 |
+| 5b | E2E stubs (offerKey) | Tester | 2 | Phase 2+3 |
+| 5c | Post-deploy verification | Tester | 3 | All |
 
-**Total estimated story points: ~31**
-
-### Simplified Story List (Minimal Viable Stripe)
-
-For projects needing only basic one-time payments (no subscriptions, no multi-plan):
-
-| # | Title | Agent | Points |
-|---|-------|-------|--------|
-| 0a | Store Stripe keys via secrets API | Planner | 1 |
-| 0b | Create Products & Prices in Stripe | Devops | 3 |
-| 1a | Create stripeService.ts (server_lambda API) | Developer | 2 |
-| 1b | Payment model + service (DynamoDB) | Developer | 3 |
-| 1c | Payment controller + routes | Developer | 2 |
-| 1d | Webhook controller + raw body route | Developer | 3 |
-| 1e | Update app.ts for webhook ordering | Developer | 1 |
-| 2a-2d | Frontend checkout (combined) | Developer | 5 |
-| 3a-3b | API env vars + Stripe build-time vars | Devops | 3 |
-| 4a-4b | Testing (combined) | Tester | 3 |
-
-**Minimal total: ~26 points**
+**Total estimated story points: ~37**
 
 ## Plan Deliverables
 
@@ -750,29 +807,49 @@ in `~/.forloop/sprint-{id}/plan/`:
 
 | File | Content |
 |------|---------|
-| `stripe-product-catalog.json` | **Primary.** Structured JSON for devops agent Stripe API calls |
+| `stripe-product-catalog.json` | **Primary.** Canonical desired-state catalog (doc 04 schema) for the sync pipeline |
 | `stripe-product-catalog.md` | Human-readable markdown for user review |
 | `stripe-story-breakdown.md` | Story list with dependencies and point estimates |
 
-Upload all three to the space S3 bucket via `forloopSyncLocalToS3(sprintId={id})`.
+Upload all files to the space S3 bucket via `forloopSyncLocalToS3(sprintId={id})`.
 
 **Critical:** The planner filesystem is not persistent (Lambda ephemeral storage).
-Always upload files to S3 after writing them. The devops agent reads them from S3.
+Always upload files to S3 after writing them.
+
+### Admin Portal Is The Primary Product Surface
+
+Plan around this from the start — it is NOT a post-sync add-on:
+
+- **Admin portal** = authoring + import + preview + apply surface (change-sets
+  and import batches, see
+  `docs/user_application_development/09-stripe_catalog_admin_mutation_flow.md`
+  and `docs/user_application_development/12-stripe_catalog_sprint_space_product_management.md`).
+- **User backend** = the orchestration client; it mediates to `server_lambda`
+  with a short-lived service token (scopes `catalog.preview/apply/read/retry`),
+  never exposing secrets or Stripe to the browser.
+- **server_lambda + control plane** = the actual sync engine: preview first,
+  then Stripe apply, then user-DynamoDB apply.
+- **Sprint space** = readiness and support: versions show setup checks (Stripe
+  secret, token scopes), sync job monitoring, and deep links into the admin
+  portal. Never plan a second authoring UI there.
+- Delete = archive (never hard delete). Preview always precedes Stripe-backed
+  changes.
 
 ## Knowledge Capture
 
 Record these decisions in `~/.forloop/sprint-{id}/knowledge/`:
 
 - Stripe mode (test/live)
-- Key storage method (server_lambda secrets API)
-- Checkout approach (hosted vs embedded)
+- Key storage method (server_lambda secrets API; secret key is `sk_`, NOT `rk_`)
+- Canonical catalog keys (productKeys/offerKeys/promotionKeys)
+- Checkout approach (hosted redirect; `offerKey` contract)
 - Currency and pricing model
 - Webhook URL pattern
 
 ## References
 
-- [Guide User Through Stripe Account & Key Setup](references/keys-from-user.md) — Dashboard navigation, registration, key formats
+- [Guide User Through Stripe Account & Key Setup](references/keys-from-user.md) — Dashboard navigation, registration, key formats (sk_ required)
 - [SSM Secret Flow (Create → Store → Retrieve)](references/secret-flow.md) — How keys flow from user to Lambda
-- [Product Catalog Spec Template](references/product-catalog-spec.md) — Full catalog spec format
+- [Product Catalog Spec Template](references/product-catalog-spec.md) — Canonical catalog spec format (doc 04)
 - [Stripe Integration Developer Skill](https://github.com/forloop/forloop-opencode-plugin-developer/blob/main/skills/stripe-integration/SKILL.md) — What the developer agent sees
 - [Stripe Official Skills](https://docs.stripe.com/skills) — Always read before planning
