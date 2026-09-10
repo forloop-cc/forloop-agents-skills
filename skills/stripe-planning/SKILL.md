@@ -90,8 +90,8 @@ What actually happens:
    renders from the runtime catalog API. Checkout posts a **local `offerKey`**;
    the backend resolves `offerKey → stripePriceId` from the runtime catalog.
    The only Stripe value in the frontend build is `VITE_STRIPE_PUBLISHABLE_KEY`
-   (delivered via the deploy config API from `forloop.json`'s
-   `stripePublishableKey`; null for non-Stripe projects).
+   (delivered via the deploy config API from the sprint secret
+   `STRIPE_PUBLISHABLE_KEY`; null for non-Stripe projects).
 4. **Sprint space is a readiness/support surface only** — it shows setup
    status, sync jobs, and links into the admin portal. It is not a second
    authoring UI.
@@ -358,7 +358,7 @@ Phase 3: Frontend (Developer)
 Phase 4: Infrastructure (Devops)
     │
     └── Story 4a: Lambda env vars (SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, FORLOOP_API_TOKEN,
-                   ADMIN_API_TOKEN) + publishable-key GitHub variable
+                   ADMIN_API_TOKEN) + publishable-key via deploy config API (sprint secret)
          │
 Phase 5: Testing (Tester)
     │
@@ -376,18 +376,23 @@ Use `forloopStoryTemplate` with `templateSlug="basic-task"` for all stories.
 **Story 0a: Store Stripe keys in space secrets via server_lambda API**
 
 ```
-Title: Store Stripe API keys in space secrets via ForLoop secrets API
+Title: Store Stripe API keys (secret + publishable + webhook) in space secrets via ForLoop secrets API
 
 Description:
-As a planner, I want the user's Stripe secret key (sk_...) and webhook signing
-secret stored securely via the server_lambda secrets API, so that the catalog
-sync pipeline and the project Lambda can retrieve them at runtime.
+As a planner, I want the user's Stripe secret key (sk_...), publishable key
+(pk_...), and webhook signing secret stored securely via the server_lambda
+secrets API, so that the catalog sync pipeline, the deploy-time config API,
+and the project Lambda can retrieve them at runtime.
 
 Acceptance Criteria:
 - Given the user's Stripe test keys are available
 - When planner calls PUT /api/opencode/sprints/{id}/secrets/STRIPE_SECRET_KEY
 - Then the secret is stored server-side (server_lambda handles encryption/storage)
 - And the stored value starts with sk_ (full secret key, NOT rk_)
+- And PUT /api/opencode/sprints/{id}/secrets/STRIPE_PUBLISHABLE_KEY also
+      succeeds with the pk_ value (public key — still stored in sprint
+      secrets, never committed to the repo; the deploy config API reads it
+      from SSM at deploy time)
 - And PUT /api/opencode/sprints/{id}/secrets/STRIPE_WEBHOOK_SECRET also succeeds
 - And secrets:write scope is present on the API token
 - And keys are NOT committed to any git repository
@@ -684,20 +689,22 @@ Dependencies: Story 3b
 **Story 4a: Runtime + build env configuration**
 
 ```
-Title: Configure Lambda env vars and the publishable-key config
+Title: Configure Lambda env vars and the publishable-key delivery
 
 Description:
 As a devops engineer, I want the backend to reach server_lambda and the
-frontend to bootstrap Stripe.js, without any Stripe secret in CI.
+frontend to bootstrap Stripe.js, without any Stripe secret in CI or the repo.
 
 Acceptance Criteria:
 - Given infra/project/main.tf
 - Then SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, FORLOOP_API_TOKEN
       (secrets:read + catalog:admin scopes, sensitive) are set on the Lambda
 - And ADMIN_API_TOKEN (+ ADMIN_CATALOG_SCOPES) protects /admin/catalog
-- And forloop.json declares stripePublishableKey (the public pk_ value)
+- And the sprint secrets hold STRIPE_PUBLISHABLE_KEY (the public pk_ value,
+      stored like STRIPE_SECRET_KEY — not committed to forloop.json)
 - And deploy.yml passes only VITE_STRIPE_PUBLISHABLE_KEY (from the deploy
-      config API; empty/null when the project has no Stripe integration)
+      config API, which reads the sprint secret at deploy time; empty/null
+      when the project has no Stripe integration)
 - And no VITE_STRIPE_PRICE_* variables remain in CI or the frontend
 
 Points: 2
@@ -790,7 +797,7 @@ Dependencies: All prior phases
 | 3a | Dynamic pricing page | Developer | 3 | 2a |
 | 3b | Checkout page (?offerKey=) | Developer | 2 | 3a, 2b |
 | 3c | Success page + Stripe.js bootstrap | Developer | 2 | 3b |
-| 4a | Lambda env vars + publishable key variable | Devops | 2 | 0a |
+| 4a | Lambda env vars + publishable-key via deploy config API | Devops | 2 | 0a |
 | 5a | Backend unit tests | Tester | 3 | Phase 2 |
 | 5b | E2E stubs (offerKey) | Tester | 2 | Phase 2+3 |
 | 5c | Post-deploy verification | Tester | 3 | All |

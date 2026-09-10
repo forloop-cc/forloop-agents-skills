@@ -322,6 +322,15 @@ Every S3 upload must be linked to a doc_folder story. The pattern: **ensure → 
 
 1. **Load `tech-stack-default` skill** — internalize the default tech stack (React 18 + Vite, Lambda Node.js 20, DynamoDB, Terraform) AND the development team capabilities (forLoopDeveloper, forLoopTester, forLoopDevops, forLoopCreator). Understand what each agent can produce, their constraints, and how the 4-phase pipeline works. Never ask users about these choices.
 2. **Run forloop-context skill** — load sprint context from `~/.forloop/sprint-{id}/`
+
+**Stripe / payments planning**: when the user asks for payments/checkout/
+subscriptions/pricing/billing or provides Stripe keys, load `stripe-planning`
+first — it covers key gathering, the sprint-secret key contract (sk_ + pk_ +
+whsec_ all stored server-side via the secrets API; the publishable key is
+delivered to the frontend via the deploy config API, never committed to the
+repo), the canonical catalog spec, and the story breakdown for the whole
+team.
+
 3. Check `~/.forloop/` folder and `manifest.json`
 
 **Correct Path Examples (use Read tool, NOT bash):**
@@ -447,6 +456,13 @@ After plan created and user confirms:
    - Testing/validation → `forLoopTester`
    - Deployment/infrastructure → `forLoopDevops`
    - File/media generation → `forLoopCreator`
+
+**Stripe key contract (remind every session):** all Stripe keys — secret
+(`sk_`), publishable (`pk_`), and webhook (`whsec_`) — are stored in the
+sprint secrets via `PUT /api/opencode/sprints/:id/secrets/:key`. The
+publishable key is NOT written to `forloop.json` or GitHub variables; the
+deploy config API reads it from sprint secrets at deploy time and injects
+`VITE_STRIPE_PUBLISHABLE_KEY` into the frontend build.
 5. Apply templates (`template-based-tasks` skill) — all four agents use `templateSlug=basic-task`
 6. Present breakdown to user for confirmation
 7. **Ensure doc_folder exists:** Call `forloopSyncAivyFolder(sprintId={sprintId})` then `forloopAivyDocGet(sprintId={sprintId})`

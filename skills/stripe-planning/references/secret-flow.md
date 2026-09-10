@@ -198,7 +198,7 @@ it just calls the same API endpoint regardless of environment.
 |------|-------|----------|
 | Store Stripe secret key | Planner | `PUT /api/opencode/sprints/:id/secrets/STRIPE_SECRET_KEY` via forloop plugin |
 | Store webhook secret | Planner | `PUT /api/opencode/sprints/:id/secrets/STRIPE_WEBHOOK_SECRET` via forloop plugin |
-| Set publishable key on frontend | Devops | Commit `stripePublishableKey` to `forloop.json` (delivered via deploy config API; GitHub Variable fallback) |
+| Store publishable key (for frontend build) | Planner/User | `PUT /api/opencode/sprints/:id/secrets/STRIPE_PUBLISHABLE_KEY` via forloop plugin (delivered via deploy config API) |
 | Write Stripe service that fetches from API | Developer | `stripeService.ts` (fetch from server_lambda) |
 | Configure Lambda env vars for API access | Devops | Terraform `lambda_environment` |
 | Write backend code (controllers, webhooks) | Developer | Stripe SDK + server_lambda secrets |
@@ -211,4 +211,4 @@ Use these exact key names when storing via the API:
 |----------|---------|-----------|
 | `STRIPE_SECRET_KEY` | Stripe **secret key** (`sk_` — full access; restricted `rk_` keys are NOT supported) | Yes (server-side storage) |
 | `STRIPE_WEBHOOK_SECRET` | Webhook signing secret (`whsec_`) | Yes (server-side storage) |
-| `STRIPE_PUBLISHABLE_KEY` | Publishable key (frontend) | No (`stripePublishableKey` in `forloop.json`, NOT via secrets API) |
+| `STRIPE_PUBLISHABLE_KEY` | Publishable key (frontend) | No (stored via secrets API like the others; read at deploy time by the deploy config API) |

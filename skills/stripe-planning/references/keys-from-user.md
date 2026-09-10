@@ -209,7 +209,7 @@ After key gathering, add this to `~/.forloop/sprint-{id}/knowledge/`:
 
 ### Key Storage
 - Secret key → sprint secrets via server_lambda (server-side encrypted)
-- Publishable key → `stripePublishableKey` in the repo's `forloop.json` (public; delivered at deploy through the deploy config API)
+- Publishable key → sprint secrets via server_lambda (`STRIPE_PUBLISHABLE_KEY`; delivered at deploy through the deploy config API — never committed to the repo)
 - Webhook secret → sprint secrets via server_lambda
 ```
 
