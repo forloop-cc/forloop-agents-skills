@@ -698,7 +698,10 @@ frontend to bootstrap Stripe.js, without any Stripe secret in CI or the repo.
 Acceptance Criteria:
 - Given infra/project/main.tf
 - Then SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, FORLOOP_API_TOKEN
-      (secrets:read + catalog:admin scopes, sensitive) are set on the Lambda
+      (scopes secrets:read + catalog:admin, sensitive) are set on the Lambda
+- And FORLOOP_API_TOKEN comes from the deploy config API (broker-minted
+      system token bound to the sprint owner), NOT from repo GitHub Actions
+      secrets — the user repo needs zero repo secrets for ForLoop
 - And ADMIN_API_TOKEN (+ ADMIN_CATALOG_SCOPES) protects /admin/catalog
 - And the sprint secrets hold STRIPE_PUBLISHABLE_KEY (the public pk_ value,
       stored like STRIPE_SECRET_KEY — not committed to forloop.json)
