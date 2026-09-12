@@ -171,15 +171,17 @@ agents — changing them breaks the integration.
 | Secret Key Name | What to Store |
 |-----------------|---------------|
 | `STRIPE_SECRET_KEY` | The user's Stripe **secret key** (`sk_test_...` / `sk_live_...`). Full access required by the catalog sync pipeline. |
-| `STRIPE_WEBHOOK_SECRET` | The webhook signing secret (`whsec_...`) — collected after webhook endpoint is created |
+| `STRIPE_WEBHOOK_SECRET` | The webhook signing secret (`whsec_...`) — **auto-provisioned** by the deploy-config broker at backend deploy; do NOT collect it manually (manual fallback API exists but the UI entry was removed). |
 
 **Store via:**
 ```
 PUT /api/opencode/sprints/{sprintId}/secrets/STRIPE_SECRET_KEY
-PUT /api/opencode/sprints/{sprintId}/secrets/STRIPE_WEBHOOK_SECRET
 ```
 
 **Do NOT:** add prefixes, suffixes, environment suffixes (dev/prd), or rename these keys.
+Runtime secret saves (sk_/whsec_) target ONE user-app environment per save
+(`environment` body = dev|prd). The role used for the user-account SSM write
+follows the ForLoop PLATFORM environment, not the user-app environment.
 
 ### Phase B: Product Catalog (Product / Offer / Promotion model)
 
@@ -376,13 +378,14 @@ Use `forloopStoryTemplate` with `templateSlug="basic-task"` for all stories.
 **Story 0a: Store Stripe keys in space secrets via server_lambda API**
 
 ```
-Title: Store Stripe API keys (secret + publishable + webhook) in space secrets via ForLoop secrets API
+Title: Store Stripe API keys (secret + publishable) in space secrets via ForLoop secrets API
 
 Description:
-As a planner, I want the user's Stripe secret key (sk_...), publishable key
-(pk_...), and webhook signing secret stored securely via the server_lambda
-secrets API, so that the catalog sync pipeline, the deploy-time config API,
-and the project Lambda can retrieve them at runtime.
+As a planner, I want the user's Stripe secret key (sk_...) and publishable key
+(pk_...) stored securely via the server_lambda secrets API, so that the
+catalog sync pipeline, the deploy-time config API, and the project Lambda can
+retrieve them at runtime. The webhook signing secret is NOT part of this
+story: it is auto-provisioned by the deploy-config broker at backend deploy.
 
 Acceptance Criteria:
 - Given the user's Stripe test keys are available
@@ -393,7 +396,14 @@ Acceptance Criteria:
       succeeds with the pk_ value (public key — still stored in sprint
       secrets, never committed to the repo; the deploy config API reads it
       from SSM at deploy time)
-- And PUT /api/opencode/sprints/{id}/secrets/STRIPE_WEBHOOK_SECRET also succeeds
+- And PUT /api/opencode/sprints/{id}/secrets/STRIPE_WEBHOOK_SECRET also
+      succeeds when the webhook endpoint already exists (normally the
+      deploy-config broker auto-provisions the endpoint + secret at backend
+      deploy time, doc 16 §4.3)
+- And runtime Stripe secrets (sk_/whsec_) are provisioned into the user AWS
+      account SSM parameter store for ONE target user-app environment at save
+      time (body `environment` = "dev" | "prd", default "dev" — doc 16 §3.4;
+      no cross-environment fan-out)
 - And secrets:write scope is present on the API token
 - And keys are NOT committed to any git repository
 

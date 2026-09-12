@@ -196,8 +196,8 @@ it just calls the same API endpoint regardless of environment.
 
 | Task | Agent | Tool/API |
 |------|-------|----------|
-| Store Stripe secret key | Planner | `PUT /api/opencode/sprints/:id/secrets/STRIPE_SECRET_KEY` via forloop plugin |
-| Store webhook secret | Planner | `PUT /api/opencode/sprints/:id/secrets/STRIPE_WEBHOOK_SECRET` via forloop plugin |
+| Store Stripe secret key | Planner | `PUT /api/opencode/sprints/:id/secrets/STRIPE_SECRET_KEY` via forloop plugin (body `environment` = dev/prd, default dev; runtime provisioning targets that environment only — doc 16 §3.4) |
+| Store webhook secret | Planner/Devops | Auto-provisioned by the deploy-config broker at backend deploy (Stripe API + user-account SSM); manual fallback: `PUT /api/opencode/sprints/:id/secrets/STRIPE_WEBHOOK_SECRET` |
 | Store publishable key (for frontend build) | Planner/User | `PUT /api/opencode/sprints/:id/secrets/STRIPE_PUBLISHABLE_KEY` via forloop plugin (delivered via deploy config API) |
 | Write Stripe service that fetches from API | Developer | `stripeService.ts` (fetch from server_lambda) |
 | Configure Lambda env vars for API access | Devops | Terraform `lambda_environment` |
@@ -210,5 +210,5 @@ Use these exact key names when storing via the API:
 | Key Name | Purpose | Sensitive? |
 |----------|---------|-----------|
 | `STRIPE_SECRET_KEY` | Stripe **secret key** (`sk_` — full access; restricted `rk_` keys are NOT supported) | Yes (server-side storage) |
-| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret (`whsec_`) | Yes (server-side storage) |
+| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret (`whsec_`) | Yes (user-account SSM; runtime read via scoped IAM) |
 | `STRIPE_PUBLISHABLE_KEY` | Publishable key (frontend) | No (stored via secrets API like the others; read at deploy time by the deploy config API) |
