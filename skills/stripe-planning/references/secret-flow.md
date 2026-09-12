@@ -198,7 +198,7 @@ it just calls the same API endpoint regardless of environment.
 |------|-------|----------|
 | Store Stripe secret key | Planner | `PUT /api/opencode/sprints/:id/secrets/STRIPE_SECRET_KEY` via forloop plugin (body `environment` = dev/prd, default dev; runtime provisioning targets that environment only — doc 16 §3.4) |
 | Store webhook secret | Planner/Devops | Auto-provisioned by the deploy-config broker at backend deploy (Stripe API + user-account SSM); manual fallback: `PUT /api/opencode/sprints/:id/secrets/STRIPE_WEBHOOK_SECRET` |
-| Store publishable key (for frontend build) | Planner/User | `PUT /api/opencode/sprints/:id/secrets/STRIPE_PUBLISHABLE_KEY` via forloop plugin (delivered via deploy config API) |
+| Store publishable key (for frontend build) | Planner/User | `PUT /api/opencode/sprints/:id/secrets/STRIPE_PUBLISHABLE_KEY` via forloop plugin (environment-scoped like sk_ — body `environment` = dev/prd; the deploy-config broker returns the pk of the deploying user-app env) |
 | Write Stripe service that fetches from API | Developer | `stripeService.ts` (fetch from server_lambda) |
 | Configure Lambda env vars for API access | Devops | Terraform `lambda_environment` |
 | Write backend code (controllers, webhooks) | Developer | Stripe SDK + server_lambda secrets |

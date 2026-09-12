@@ -90,8 +90,9 @@ What actually happens:
    renders from the runtime catalog API. Checkout posts a **local `offerKey`**;
    the backend resolves `offerKey → stripePriceId` from the runtime catalog.
    The only Stripe value in the frontend build is `VITE_STRIPE_PUBLISHABLE_KEY`
-   (delivered via the deploy config API from the sprint secret
-   `STRIPE_PUBLISHABLE_KEY`; null for non-Stripe projects).
+   (delivered via the deploy config API; environment-scoped — the broker
+   returns the pk of the deploying user-app env from the user-account SSM
+   copy, null for non-Stripe projects).
 4. **Sprint space is a readiness/support surface only** — it shows setup
    status, sync jobs, and links into the admin portal. It is not a second
    authoring UI.
