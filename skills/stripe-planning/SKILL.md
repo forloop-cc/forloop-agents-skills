@@ -350,7 +350,7 @@ Phase 2: Backend Runtime Surfaces (Developer)
     ├── Story 2a: runtime catalog read APIs (products/offers/promotions)
     ├── Story 2b: checkout by offerKey (server-side price resolution) + payment record
     ├── Story 2c: Stripe webhook (raw body + signature verification)
-    └── Story 2d: stripeService fetching secret/webhook secret from server_lambda
+    └── Story 2d: stripeService reading secret/webhook secret from user-account SSM
          │
 Phase 3: Frontend (Developer)
     │
@@ -605,21 +605,27 @@ Assignee: forLoopDeveloper
 Dependencies: Story 2b (payment model)
 ```
 
-**Story 2d: Stripe client bootstrap from sprint secrets**
+**Story 2d: Stripe client bootstrap from user-account SSM**
 
 ```
-Title: stripeService fetches STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET from server_lambda
+Title: stripeService reads STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET from user-account SSM
 
 Description:
-As a developer, I want the backend Stripe client built from the sprint secrets
-API at cold start, so no Stripe secret exists in code or build artifacts.
+As a developer, I want the backend Stripe client built from the user AWS
+account SSM Parameter Store at cold start, so no Stripe secret exists in code,
+build artifacts, or GitHub Actions secrets. The webhook secret itself is
+auto-provisioned by the deploy-config broker — this story only consumes it.
 
 Acceptance Criteria:
-- Given SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, FORLOOP_API_TOKEN (secrets:read)
+- Given STRIPE_SECRET_KEY_PARAMETER_NAME / STRIPE_WEBHOOK_SECRET_PARAMETER_NAME
+  env vars (from terraform: /forloop/<ENV>/sprints/<sprintId>/secrets/...)
 - When stripeService initializes
-- Then it fetches sprint secrets over HTTPS and caches them in memory
+- Then it reads the parameters directly via SSM (scoped ssm:GetParameter IAM)
+  and caches them in memory (short TTL)
 - And getStripeClient() builds the SDK client from STRIPE_SECRET_KEY (sk_)
-- And getWebhookSecret() returns STRIPE_WEBHOOK_SECRET
+- And getWebhookSecret() returns STRIPE_WEBHOOK_SECRET (whsec_)
+- And NO FORLOOP_API_TOKEN / server_lambda secret fetch is used at Stripe
+  cold start
 
 Points: 2
 Priority: high

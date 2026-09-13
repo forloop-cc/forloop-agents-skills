@@ -81,7 +81,7 @@ sk_test_... →  Secret key (test mode)    ✓
 pk_test_... →  Publishable key (test mode) ✓
 sk_live_... →  Secret key (LIVE mode)      ⚠️  Warn: this is a live key!
 rk_test_... →  Restricted key             ✗  NOT supported — ask for the full sk_ secret key
-whsec_...   →  Webhook signing secret     ✓ (collected later, after deploy)
+whsec_...   →  Webhook signing secret     ✓ (auto-provisioned by ForLoop at backend deploy)
 ```
 
 If a live key is provided, ask: "This appears to be a live key (sk_live_).
@@ -120,18 +120,31 @@ Why the full key is required:
 | Webhook signature verification | User app backend (`STRIPE_WEBHOOK_SECRET`) |
 | Stripe.js bootstrap | Publishable key only (frontend build var) |
 
-## Stage 4: (Later) Webhook Signing Secret
+## Stage 4: Webhook Signing Secret — AUTO-PROVISIONED
 
-This comes AFTER the webhook endpoint is created (devops/developer phase).
+Do NOT ask the user to create the webhook endpoint or collect `whsec_`.
+The ForLoop server handles it automatically at the first backend deploy
+(`server_lambda/src/services/stripeWebhookProvisioner.ts`): the deploy-config
+broker reads the environment's `STRIPE_SECRET_KEY` from the user AWS account,
+calls the Stripe API to register the endpoint at
+`{apiUrl}/webhooks/stripe` (`checkout.session.completed` /
+`checkout.session.expired`), receives the `whsec_` in the API response, and
+stores it in the sprint secrets + user-account SSM for the target
+user-app environment.
+
+Planner talking points when the user asks about webhooks:
+
+- The endpoint and its signing secret are created automatically on backend
+  deploy — the user does nothing in the Stripe Dashboard.
+- The secret list in the sprint space shows `STRIPE_WEBHOOK_SECRET` as
+  "auto-managed" (no manual entry).
+- Recovery only: if the endpoint was deleted in the Dashboard, delete the
+  sprint secret row (per environment) and redeploy the backend — the broker
+  recreates it.
 
 ```
-After we deploy and register the webhook endpoint, you'll need to
-get the webhook signing secret:
-
-1. Go to Dashboard → Developers → Webhooks
-2. Click on the webhook endpoint for your project
-3. Click "Reveal" under "Signing secret"
-4. Share the value (starts with whsec_)
+(No action needed from the user for the webhook secret.
+We handle it automatically during deployment.)
 ```
 
 ## Conversation Flow Summary
@@ -204,13 +217,13 @@ After key gathering, add this to `~/.forloop/sprint-{id}/knowledge/`:
 ### Keys (status only — values NOT stored)
 - [x] Test publishable key (pk_test_)
 - [x] Test secret key (sk_test_)
-- [ ] Webhook signing secret (will be collected after deploy)
+- [x] Webhook signing secret (auto-provisioned by ForLoop at backend deploy — no user action)
 - [ ] Live keys (will be collected before production launch)
 
 ### Key Storage
 - Secret key → sprint secrets via server_lambda (server-side encrypted)
 - Publishable key → sprint secrets via server_lambda (`STRIPE_PUBLISHABLE_KEY`; delivered at deploy through the deploy config API — never committed to the repo)
-- Webhook secret → sprint secrets via server_lambda
+- Webhook secret → auto-provisioned by the deploy-config broker (Stripe API + sprint secrets + user-account SSM)
 ```
 
 ## Security Boundaries for the Planner
