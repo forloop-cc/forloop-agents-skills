@@ -340,7 +340,7 @@ Phase 0: Setup (Planner + Developer)
          │
 Phase 1: Product Management via Admin Portal (Developer)
     │
-    ├── Story 1a: Wire/verify admin catalog authoring (change-sets) in the template
+    ├── Story 1a: Wire/verify admin catalog authoring (change-sets) via the Admin Resource Framework
     ├── Story 1b: Wire/verify bulk import workspace (import batches) in the admin portal
     ├── Story 1c: Load the planner's catalog through preview → confirm apply
     └── Story 1d: Admin sync jobs/retry views
@@ -440,6 +440,13 @@ Assignee: forLoopPlanner
 
 #### Phase 1 Stories (Developer) — Admin Portal Product Management
 
+> **Framework note:** the admin portal is an instance of the reusable
+> **Admin Resource Framework** (see `admin-panel-planning` skill). `products`
+> and `promotions` are pre-registered `changeSet` resources in
+> `backend/src/admin/adminResources.ts`; `sync-jobs` and `import-batches`
+> are pre-registered special panels. The stories below verify/wire that
+> wiring — they do NOT build bespoke admin pages.
+
 **Story 1a: Admin catalog authoring (change-sets)**
 
 ```
@@ -447,16 +454,18 @@ Title: Wire the admin portal catalog authoring flow (change-sets)
 
 Description:
 As an admin, I want to create/update/archive products in the app's admin
-portal as change-sets, so that Stripe and the runtime catalog are updated
+panel as change-sets, so that Stripe and the runtime catalog are updated
 through the server-side sync pipeline (preview then apply) instead of
-direct Stripe calls.
+direct Stripe calls. The admin panel is the Admin Resource Framework with
+`products` pre-registered (changeSet mode) — wire/verify it, do not build
+bespoke pages.
 
 Acceptance Criteria:
-- Given the project-base template's /admin/catalog backend routes
+- Given the project-base template's pre-registered `products` admin resource
 - When an admin creates/updates/archives a product
 - Then a change-set (draft) is recorded (never a direct Stripe mutation)
-- And POST /admin/catalog/preview starts a server-side preview job
-- And POST /admin/catalog/apply confirms the previewed job
+- And POST /admin/products/actions/preview starts a server-side preview job
+- And POST /admin/products/actions/apply confirms the previewed job
 - And the backend authenticates to server_lambda with the short-lived service token
 - And the X-Actor headers carry the real admin identity
 

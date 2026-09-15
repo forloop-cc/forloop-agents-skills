@@ -129,6 +129,7 @@ If `.forloop/manifest.json` doesn't exist or contains no active space:
 - **Do NOT plan GitHub Actions or CI/CD setup** — workflows are pre-baked in the template.
 - **ALWAYS use templates when creating stories** — use `forloopStoryTemplate` with `templateSlug="basic-task"` for implementation tasks, or `templateSlug="basic-note"` for documentation/note stories. Never create stories with `forloopStoryCreate` without a template unless the story type is `doc_folder`. Templates ensure consistent structure, proper metadata, and canvas rendering.
 - **Only plan stories using available AWS services** — see the "Available AWS Services" section in `tech-stack-default` skill. Do NOT propose VPC, EC2, ECS, EKS, RDS, SNS, SQS, Step Functions, or any service not in the available list. Available services: S3, CloudFront, Lambda, DynamoDB, API Gateway v2, CloudWatch Logs, SSM, IAM, ECR.
+- **Admin/resource-management requests must be planned against the Admin Resource Framework** — load `admin-panel-planning` and plan "register `<resource>` in the admin panel" stories. Never plan bespoke admin pages or one-off admin routes; the framework generates routes/API/UI from `backend/src/admin/adminResources.ts`.
 - For deployment stories, default to AWS serverless components (Lambda, API Gateway, S3/CloudFront, IAM, SSM, ECR) and IaC, but keep it at a planning/story level.
 - Every significant work item must be captured as a story using ForLoop tools (prefer task-tracking skill).
 
@@ -330,6 +331,12 @@ whsec_ all stored server-side via the secrets API; the publishable key is
 delivered to the frontend via the deploy config API, never committed to the
 repo), the canonical catalog spec, and the story breakdown for the whole
 team.
+
+**Admin / resource-management planning**: when the user asks for admin
+screens, CMS features, management dashboards, or "how do I manage X in my
+app", load `admin-panel-planning` first — it covers the registry-driven
+Admin Resource Framework (one registry entry per resource; `direct` CRUD vs
+`changeSet` sync modes; no bespoke admin pages).
 
 3. Check `~/.forloop/` folder and `manifest.json`
 

@@ -70,6 +70,7 @@ The template repo comes with:
 - ✅ OIDC authentication to AWS
 - ✅ CloudFront + S3 frontend hosting
 - ✅ Makefile for common commands (`make dev`, `make build`, `make test`, `make deploy`)
+- ✅ **Admin panel framework** — registry-driven admin at `/admin` (see "Admin Panel Standard" below)
 
 ## Story Templates
 
@@ -334,6 +335,49 @@ Do NOT plan stories requiring these services — they are **not** available to t
 ### Planning Rule
 
 **When planning backend or infrastructure stories, only use services from the "Available" list.** If a user requests functionality that requires an unavailable service, suggest an alternative using available services (e.g., DynamoDB Streams instead of SQS, SSM instead of KMS for secrets, Lambda direct invocation instead of Step Functions).
+
+## Admin Panel Standard
+
+Every project with a backend ships a **reusable, registry-driven admin
+panel** (platform doc 18). Planning admin/resource-management features
+MUST target this framework — see the `admin-panel-planning` skill for the
+resource decision checklist and story templates.
+
+### Key facts
+
+- Admin panel at `/admin` (token login screen; token in `localStorage`,
+  `X-Admin-Token` header; `ADMIN_API_TOKEN`/`ADMIN_SCOPES` env vars).
+- Adding a managed resource = appending ONE entry to
+  `backend/src/admin/adminResources.ts`. Routes, descriptor API, sidebar,
+  list page, and forms are generated — no bespoke pages.
+- Two persistence modes:
+  - `direct` — app-owned resources → CRUD on the app's own DynamoDB table
+  - `changeSet` — ForLoop-synced catalog (products/promotions pre-registered)
+    → draft → preview → apply pipeline
+- Legacy `/admin/catalog/*` routes stay mounted for compatibility.
+
+### Folder boundary rule
+
+- Admin-panel code → `backend/src/admin/**` + `frontend/src/admin/**`
+  (self-contained, portable units).
+- Application code → conventional `backend/src/{routes,controllers,services,models}/**`
+  and `frontend/src/{pages,components,hooks,lib}/**`.
+- Shared infra stays in `backend/src/services/` when both admin and public
+  runtime use it (`dynamoService`, `changeSetStore`, `forloopSyncClient`,
+  `catalogService`).
+
+### Agent guidance
+
+- **Developer**: implements admin features by editing
+  `backend/src/admin/adminResources.ts` (+ model when `direct` mode needs a
+  OneTable entity — normally the generic `AdminResource` model suffices);
+  UI/API come for free. Unit tests for hooks/actions; E2E stub for the CRUD
+  round-trip.
+- **Tester**: validates the descriptor via `GET /admin/resources` and the
+  CRUD round-trip (create → list → update → archive) plus scope enforcement
+  (403 without the right scope).
+- **Planner**: use `admin-panel-planning` skill; never plan bespoke admin
+  pages or one-off admin routes.
 
 ## Multi-Tenancy
 
