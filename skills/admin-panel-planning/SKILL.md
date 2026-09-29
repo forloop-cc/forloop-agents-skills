@@ -32,6 +32,28 @@ on the app's own DynamoDB table).
   and forms are generated.
 - **Do NOT plan bespoke admin pages or one-off admin routes.**
 
+## Admin login (fixed decision — do not re-ask)
+
+Admin sign-in is **always the ForLoop `floop_` token** (a ForLoop API token
+minted in the ForLoop client with the `admin:panel` scope — or `catalog:admin`
+for catalog-only access). The token owner must also have access to the sprint
+(user or sprint access list).
+
+- The app backend validates the token via server_lambda introspection
+  (`POST /internal/admin-token/introspect`, called with the app's runtime
+  `FORLOOP_API_TOKEN`). This path is a FIXED platform contract — write it
+  into story ACs verbatim; never let implementation agents invent a path.
+  The template already defaults to it; `FORLOOP_INTROSPECT_PATH` exists only
+  as a deploy-time emergency override.
+- The login screen is the same for every app; a valid token with an admin
+  scope simply unlocks `/admin`. There is no account-role mode and no
+  separate "admin password".
+- `ADMIN_API_TOKEN` static compare is a **dev-bootstrap fallback only**
+  (`ENV=dev`), never the production login. Do NOT plan stories that set up
+  static admin tokens or account-role gating for production.
+- Do NOT ask the user "how should admins sign in?" — the answer above is
+  fixed by platform policy.
+
 ## When to load this skill
 
 Load when the user requests any of:
@@ -58,8 +80,10 @@ For every management surface the user wants, capture:
      (default for everything that is NOT Stripe-backed)
    - `changeSet` — ForLoop-synced entities (Stripe products/promotions) →
      draft → preview → apply pipeline. Only for catalog resources.
-4. **Permissions** — scope names, e.g. `articles.manage`; grant via
-   `ADMIN_SCOPES` env (comma separated).
+4. **Permissions** — scope names, e.g. `articles.manage`; granted through
+   the admin's ForLoop token (`admin:panel` grants all registry scopes,
+   `catalog:admin` grants the catalog scopes). `ADMIN_SCOPES` env only
+   applies to the dev-bootstrap static token.
 5. **Operations** — create/update/archive/delete flags (archive preferred
    over hard delete).
 6. **Extension needs** (rare) — custom actions, normalize/validate hooks,
@@ -111,7 +135,7 @@ route. 2-3 points, `forLoopDeveloper`.
 | Plan `changeSet` mode for app-owned data | `direct` mode (changeSet is for ForLoop-synced catalog) |
 | Plan hard-delete-first resource lifecycles | Archive by default; hard delete only via `operations.delete` |
 | Plan new admin routes/controllers | Generic router only |
-| Plan to store the admin token in the repo | Token login screen + localStorage; backend validates via `ADMIN_API_TOKEN` (static) or ForLoop `floop_` token introspection (v2: token owner must have sprint access + `admin:panel`/`catalog:admin` scope) |
+| Plan to store the admin token in the repo | Token login screen + localStorage; backend validates the ForLoop `floop_` token via server_lambda introspection (owner must have sprint access + `admin:panel`/`catalog:admin` scope). `ADMIN_API_TOKEN` static compare is dev-bootstrap only — never the production login |
 
 ## Relationship to stripe-planning
 

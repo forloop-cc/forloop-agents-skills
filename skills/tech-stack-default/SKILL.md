@@ -346,7 +346,17 @@ resource decision checklist and story templates.
 ### Key facts
 
 - Admin panel at `/admin` (token login screen; token in `localStorage`,
-  `X-Admin-Token` header; `ADMIN_API_TOKEN`/`ADMIN_SCOPES` env vars).
+  `X-Admin-Token` header).
+- **Admin login is ALWAYS the ForLoop `floop_` token** (minted in the
+  ForLoop client; `admin:panel` = all resources, `catalog:admin` = catalog
+  only; owner must have sprint access). The backend validates it through
+  server_lambda introspection at the FIXED contract path
+  `POST {SERVER_LAMBDA_URL}/internal/admin-token/introspect` (called with
+  `FORLOOP_API_TOKEN`; env override `FORLOOP_INTROSPECT_PATH` is emergency-only).
+  Do not invent alternative endpoint paths. There is no account-role mode
+  and no production static token.
+- `ADMIN_API_TOKEN` / `ADMIN_SCOPES` env vars are a **dev-bootstrap fallback
+  only** (`ENV=dev`). Never plan static admin tokens for production.
 - Adding a managed resource = appending ONE entry to
   `backend/src/admin/adminResources.ts`. Routes, descriptor API, sidebar,
   list page, and forms are generated — no bespoke pages.
@@ -371,7 +381,9 @@ resource decision checklist and story templates.
 - **Developer**: implements admin features by editing
   `backend/src/admin/adminResources.ts` (+ model when `direct` mode needs a
   OneTable entity — normally the generic `AdminResource` model suffices);
-  UI/API come for free. Unit tests for hooks/actions; E2E stub for the CRUD
+  UI/API come for free. Admin auth is already wired (ForLoop `floop_` token
+  introspection) — do NOT add account-role gating or static-token
+  middleware. Unit tests for hooks/actions; E2E stub for the CRUD
   round-trip.
 - **Tester**: validates the descriptor via `GET /admin/resources` and the
   CRUD round-trip (create → list → update → archive) plus scope enforcement

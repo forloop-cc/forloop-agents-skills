@@ -244,7 +244,7 @@ server side. Never plan around client-supplied raw price IDs.
 |-------------|-------|
 | Tenant ID and project name? | Already known from space context, confirm |
 | Dev vs. production webhook URLs? | `api.{tenant}.forloop.cc/{env}/{project}/webhooks/stripe` |
-| Admin portal access? | The app's `/admin/catalog` page — confirm an admin token policy exists |
+| Admin portal access? | The app's `/admin` panel — login is ALWAYS the ForLoop `floop_` token (scope `admin:panel` or `catalog:admin`; owner must have sprint access). No account-role or static-token mode exists |
 
 ## Product Catalog Specification
 
@@ -319,6 +319,11 @@ locally, always upload to S3 via `forloopSyncLocalToS3(sprintId={id})`.
   variants of the same product are offers of one product.
 - Stable local keys (`productKey`, `offerKey`, `promotionKey`) are the identity
   contract; Stripe IDs are an implementation detail resolved at apply time.
+- **Auto-sync on save (fixed decision — do not re-ask):** when an admin
+  edits a product/offer in the admin panel and saves, the change-set apply
+  automatically creates the new Stripe Price and archives the old one as
+  part of the same pipeline job. There is NO separate "Sync to Stripe"
+  button and no manual re-sync step — do not plan one.
 - Permanent price changes create a NEW Stripe price (and archive the old
   offer); temporary discounts are Promotions, never mutations of the base price.
 - Split into separate products only when the business meaning differs (e.g.
@@ -360,8 +365,9 @@ Phase 3: Frontend (Developer)
          │
 Phase 4: Infrastructure (Devops)
     │
-    └── Story 4a: Lambda env vars (SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, FORLOOP_API_TOKEN,
-                   ADMIN_API_TOKEN) + publishable-key via deploy config API (sprint secret)
+    └── Story 4a: Lambda env vars (SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, FORLOOP_API_TOKEN)
+                   + publishable-key via deploy config API (sprint secret); admin login via
+                   ForLoop floop_ token introspection (no static ADMIN_API_TOKEN)
          │
 Phase 5: Testing (Tester)
     │
@@ -466,6 +472,9 @@ Acceptance Criteria:
 - Then a change-set (draft) is recorded (never a direct Stripe mutation)
 - And POST /admin/products/actions/preview starts a server-side preview job
 - And POST /admin/products/actions/apply confirms the previewed job
+- And on apply, a changed price AUTOMATICALLY creates the new Stripe Price
+  and archives the old one in the same job (auto-sync on save — no separate
+  "Sync to Stripe" button exists)
 - And the backend authenticates to server_lambda with the short-lived service token
 - And the X-Actor headers carry the real admin identity
 
@@ -724,11 +733,14 @@ frontend to bootstrap Stripe.js, without any Stripe secret in CI or the repo.
 Acceptance Criteria:
 - Given infra/project/main.tf
 - Then SERVER_LAMBDA_URL, FORLOOP_SPRINT_ID, FORLOOP_API_TOKEN
-      (scopes secrets:read + catalog:admin, sensitive) are set on the Lambda
+      (scopes secrets:read + catalog:admin + admin:introspect, sensitive)
+      are set on the Lambda
 - And FORLOOP_API_TOKEN comes from the deploy config API (broker-minted
       system token bound to the sprint owner), NOT from repo GitHub Actions
       secrets — the user repo needs zero repo secrets for ForLoop
-- And ADMIN_API_TOKEN (+ ADMIN_CATALOG_SCOPES) protects /admin/catalog
+- And admin login is the ForLoop `floop_` token via server_lambda
+      introspection (SERVER_LAMBDA_URL + FORLOOP_API_TOKEN already set
+      above) — NO ADMIN_API_TOKEN static token is configured in production
 - And the sprint secrets hold STRIPE_PUBLISHABLE_KEY (the public pk_ value,
       stored like STRIPE_SECRET_KEY — not committed to forloop.json)
 - And deploy.yml passes only VITE_STRIPE_PUBLISHABLE_KEY (from the deploy

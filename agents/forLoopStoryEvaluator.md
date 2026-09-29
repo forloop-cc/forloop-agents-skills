@@ -11,6 +11,7 @@ mode: subagent
 temperature: 0.2
 permission:
   "*": allow
+  question: deny
   external_directory:
     "/tmp/home/.forloop/**": allow
     "/tmp/home/.forloop/sprint-*/**": allow
