@@ -220,6 +220,7 @@ When creating stories via the API (`POST /api/opencode/stories`), these fields a
 - **Entry point**: `src/lambda.ts` — wraps Express app via serverless-express for Lambda
 - **App setup**: `src/app.ts` — Express app with CORS, JSON parsing, route registration, error handling
 - **API Gateway**: HTTP API (v2) with catch-all routes `ANY /{env}/{project}/{proxy+}`
+- **CORS is owned by the APPLICATION, not the API Gateway** — see "CORS Ownership" below
 - **Database**: Single-table DynamoDB design with `pk`/`sk` pattern
 - **Models**: `dynamodb-onetable` with ULID auto-generation, `#` separator
 - **Container**: Multi-stage Dockerfile (Node 20 Alpine build → Lambda runtime image)
@@ -254,6 +255,42 @@ backend/
 - ECR repository: `fl-{account_id}-{tenant}-{project}` (managed by Terraform)
 - Image tags: `{env}-{commit-sha}`
 - Terraform `ignore_changes = [image_uri]` on Lambda — CI updates image outside Terraform
+
+### CORS Ownership (IMPORTANT)
+
+**The application owns CORS — the shared tenant API Gateway does NOT emit
+`Access-Control-Allow-Origin`.** The baseline HTTP API is created with **no
+`cors_configuration`** on purpose, so preflight (`OPTIONS`) and the ACAO header
+are answered by the app's own Express response. Consequence: if the app has no
+CORS middleware, browser calls from the frontend origin fail with
+`No 'Access-Control-Allow-Origin' header is present on the requested resource`.
+
+Rules:
+
+- **ALWAYS enable CORS in `backend/src/app.ts`** — the template ships
+  `app.use(cors())`. Never remove it. Removing it breaks every browser call.
+- **Configure origins in the app, not the gateway.** The template reads the
+  `CORS_ORIGINS` Lambda env var (comma-separated allowlist); unset ⇒ `*`.
+  Set it to the app's real origin(s) when credentials or restrictive CORS are
+  needed:
+  ```
+  CORS_ORIGINS=https://{project}-dev.{tenant}.dev.forloop.cc,https://{project}.{tenant}.forloop.cc
+  ```
+  Add `CORS_ORIGINS` to `lambda_environment` in `infra/project/main.tf` when you
+  need a specific allowlist.
+- **Never try to fix CORS at the API Gateway.** A gateway-level
+  `cors_configuration` is authoritative and OVERRIDES the app's header; the
+  shared API is intentionally left without one so each project controls its own
+  ACAO. "Fix the gateway CORS" is never the answer for a project CORS bug.
+- **Origin value must match exactly** — scheme + host + port, no trailing slash.
+  `https://app.example.com` ≠ `https://app.example.com/`.
+- **Bearer/agent routes need CORS too:** the A2A agent-callable routes are
+  called from the agent runtime (server-side, no CORS) but any browser/admin
+  console path must receive ACAO like every other route.
+- **Debugging check:** `curl -i -H "Origin: https://<frontend-origin>" \
+  https://api.../{env}/{project}/health` must return
+  `access-control-allow-origin`. If it's missing → the app's CORS middleware is
+  absent or the origin isn't in `CORS_ORIGINS`.
 
 ## Infrastructure
 
@@ -313,7 +350,7 @@ These services are **already provisioned** when an organization is created. Proj
 | **ACM** | SSL/TLS certificates for CloudFront and API Gateway domains |
 | **CloudFront** | Distributions per tenant (dev/prd) |
 | **S3** | Frontend buckets (`fl-{account}-{tenant}-frontend-{env}`) |
-| **API Gateway** | HTTP API with custom domain names |
+| **API Gateway** | HTTP API with custom domain names. **CORS is app-owned** — the shared API runs no `cors_configuration`; the app's Express `cors()` owns ACAO (see "CORS Ownership") |
 | **IAM** | Deploy roles via StackSet |
 
 ### NOT Available
@@ -783,6 +820,7 @@ Some features require coordination across agents:
 | Suggest manual AWS console changes | Use Terraform for all infrastructure |
 | Plan VPC, EC2, ECS, EKS, RDS, SNS, SQS, Step Functions | Use only available services (see Available AWS Services section) |
 | Plan S3 bucket or API Gateway creation | Use pre-provisioned baseline resources |
+| Try to fix CORS by editing API Gateway config | Enable/configure CORS in the app (`app.use(cors())`, `CORS_ORIGINS` env) — the app owns ACAO |
 | Plan Route53 or ACM changes | DNS and certs are managed by Control Plane |
 | Assign "generate weekly report" story to Developer | Assign to Creator — file generation, not code |
 | Create one story for "generate music + build audio player" | Split into two: Creator (assets) + Developer (integration) |
