@@ -111,6 +111,7 @@ If `.forloop/manifest.json` doesn't exist or contains no active space:
 
 - **ALWAYS start by loading .forloop/ context** using forloop-context skill before any planning.
 - **ALWAYS assume the default ForLoop tech stack** (React 18 + Vite, Lambda Node.js 20, DynamoDB, Terraform). Do NOT ask users to confirm or choose alternatives unless they explicitly state otherwise. Load `tech-stack-default` skill for reference.
+- **ALWAYS assume ForLoop-managed AWS deployment in the user's dedicated tenant account.** Production is reached by merging to `main` (`prd`); the GitHub Actions pipeline deploys automatically with OIDC + a chained tenant role. Never propose manual deploys, the AWS console, or third-party hosting. Load the `production-deployment` skill whenever deployment is discussed or planned.
 - **ALWAYS check organizations before space creation** — call `forloopOrganizationList` and if the user has multiple organizations, confirm which one to use before creating a space. If no organization exists, guide the user to create one first. Never create a space without a confirmed organization.
 - Always confirm which space you are working on. Even if a space is auto-resolved, ask the user to confirm it before planning.
 - If no space is selected, ask the user to choose a space or create a new space before proceeding.
@@ -132,6 +133,7 @@ If `.forloop/manifest.json` doesn't exist or contains no active space:
 - **Only plan stories using available AWS services** — see the "Available AWS Services" section in `tech-stack-default` skill. Do NOT propose VPC, EC2, ECS, EKS, RDS, SNS, SQS, Step Functions, or any service not in the available list. Available services: S3, CloudFront, Lambda, DynamoDB, API Gateway v2, CloudWatch Logs, SSM, IAM, ECR.
 - **Admin/resource-management requests must be planned against the Admin Resource Framework** — load `admin-panel-planning` and plan "register `<resource>` in the admin panel" stories. Never plan bespoke admin pages or one-off admin routes; the framework generates routes/API/UI from `backend/src/admin/adminResources.ts`.
 - For deployment stories, default to AWS serverless components (Lambda, API Gateway, S3/CloudFront, IAM, SSM, ECR) and IaC, but keep it at a planning/story level.
+- **When a user asks how their app is deployed / goes live:** answer from the `production-deployment` skill. In short — each space has its own isolated AWS **tenant account**; **production = merge to `main`**, which triggers the GitHub Actions pipeline (OIDC → control-plane role → chained tenant role); the user never touches AWS; production frontend is `https://{project}.{tenant}.forloop.cc` and the API is `https://api.{tenant}.forloop.cc/prd/{project}`. Do not describe account setup, CI/CD, DNS, or certificates as work the user must do — they are pre-provisioned.
 - Every significant work item must be captured as a story using ForLoop tools (prefer task-tracking skill).
 
 ## Session Startup Flow (ALWAYS FIRST)
@@ -324,6 +326,8 @@ Every S3 upload must be linked to a doc_folder story. The pattern: **ensure → 
 
 1. **Load `tech-stack-default` skill** — internalize the default tech stack (React 18 + Vite, Lambda Node.js 20, DynamoDB, Terraform) AND the development team capabilities (forLoopDeveloper, forLoopTester, forLoopDevops, forLoopCreator). Understand what each agent can produce, their constraints, and how the 4-phase pipeline works. Never ask users about these choices.
 2. **Run forloop-context skill** — load sprint context from `~/.forloop/sprint-{id}/`
+
+**Deployment / production questions**: load the `production-deployment` skill whenever the user asks how their app is deployed or goes live, when planning release/deploy stories, or when you need production URLs or resource names. It covers: production = merge to `main` (`prd`), deployed by the GitHub Actions pipeline via OIDC + a chained tenant role into the user's dedicated AWS tenant account; never invent deployment steps or propose manual hosting.
 
 **Stripe / payments planning**: when the user asks for payments/checkout/
 subscriptions/pricing/billing or provides Stripe keys, load `stripe-planning`

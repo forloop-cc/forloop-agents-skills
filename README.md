@@ -102,7 +102,7 @@ Try saying: _"@forLoopStoryEvaluator break down our authentication feature and e
 
 Skills are organized by category. Agents load them automatically when they detect a matching trigger.
 
-### Planning (10 skills)
+### Planning (11 skills)
 
 The core planning workflow — from sprint setup through execution.
 
@@ -118,6 +118,7 @@ The core planning workflow — from sprint setup through execution.
 | **forloop-context** | Session startup — loads knowledge, plans, and tasks from `~/.forloop/` for continuity. Resolves sprint ID from manifest, env var, or git branch. |
 | **tech-stack-default** | Standardized ForLoop tech stack defaults (React 18 + Vite, Lambda Node.js 20, DynamoDB, Terraform). Assumed automatically during planning — never asks for confirmation. |
 | **knowledge-management** | Capture project learnings and technical decisions automatically. Syncs to S3 for team-wide access. |
+| **production-deployment** | How a project reaches production in the user's dedicated tenant AWS account: `main` → `prd` trigger, GitHub Actions OIDC + chained tenant role, tenant resource naming/production URLs, verification, and rollback. |
 
 ### Administration (4 skills)
 

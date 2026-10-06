@@ -206,7 +206,7 @@ When creating stories via the API (`POST /api/opencode/stories`), these fields a
 |-------|-----------|---------|
 | Runtime | AWS Lambda (Docker container) | Node.js 20.x |
 | Framework | Express.js | 4.x |
-| Serverless Adapter | @codegenie/serverless-express | 4.x |
+| Serverless Adapter | serverless-http | 3.x |
 | Database | DynamoDB | - |
 | ORM | dynamodb-onetable | 2.x |
 | Container | AWS ECR (per project) | - |
@@ -217,7 +217,7 @@ When creating stories via the API (`POST /api/opencode/stories`), these fields a
 
 - **Single Lambda function** handles ALL routes via Express.js — no per-route Lambdas
 - **MVC pattern**: `routes/` → `controllers/` → `services/` → `models/`
-- **Entry point**: `src/lambda.ts` — wraps Express app via serverless-express for Lambda
+- **Entry point**: `src/lambda.ts` — wraps the Express app via `serverless-http` for Lambda (NOT `@codegenie/serverless-express`, which has a Docker incompatibility)
 - **App setup**: `src/app.ts` — Express app with CORS, JSON parsing, route registration, error handling
 - **API Gateway**: HTTP API (v2) with catch-all routes `ANY /{env}/{project}/{proxy+}`
 - **CORS is owned by the APPLICATION, not the API Gateway** — see "CORS Ownership" below
@@ -433,7 +433,7 @@ resource decision checklist and story templates.
 | Mode | Frontend URL | API URL | S3 Path |
 |------|-------------|---------|---------|
 | **tenant** (dedicated) | `https://{project}.{tenant}.forloop.cc` | `https://api.{tenant}.forloop.cc/{env}/{project}/*` | `{env}/{project}/` |
-| **shared** (system) | `https://{tenant}--{project}[-dev].system.forloop.cc` | `https://api.system.forloop.cc/{env}/{tenant}/{project}/*` | `{env}/{tenant}/{project}/` |
+| **shared** (system) | `https://{project}[-dev].system.forloop.cc` | `https://api.system.forloop.cc/{env}/{project}/*` | `{env}/{tenant}/{project}/` |
 
 ### Naming Conventions
 
@@ -454,6 +454,8 @@ resource decision checklist and story templates.
 | OIDC audience | `forloop-deploy` |
 | Triggers | Commit message parsing: `[deploy frontend]`, `[deploy backend]`, `[deploy all]`, `[skip deploy]` |
 | Environment | `main` branch → `prd`, all other branches → `dev` |
+
+**Production** = merge to `main` (`prd`) → the pipeline deploys into the user's dedicated **tenant** AWS account. The tenant account, DNS, certificates, S3/CloudFront baseline, and state bucket are pre-provisioned; projects only create the Lambda/ECR/DynamoDB/API-route resources. See the `production-deployment` skill for the full flow, production URLs, resource naming, verification, and rollback. Never plan manual AWS-console deployments or third-party hosting.
 
 ### Deploy Pipeline
 
