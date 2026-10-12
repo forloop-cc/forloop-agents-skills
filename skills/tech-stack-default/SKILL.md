@@ -44,7 +44,7 @@ sprint-14-project-abc
 | `scripts/` | Deployment helper scripts (bash) |
 | `config/` | Project and tenant configuration files |
 | `.github/workflows/` | CI/CD pipelines (lint, test, deploy, release) |
-| `forloop.json` | ForLoop project metadata (projectName, sprintId, organizationId, flEnv) |
+| `forloop.json` | ForLoop project metadata (projectName, sprintId, organizationId, flEnv, serverLambdaApi, authServer) |
 | `Makefile` | Developer convenience commands |
 | `.env.example` | Environment variable template |
 
