@@ -13,11 +13,9 @@ metadata:
   version: "1.2.0"
   category: development
   sources:
-    - docs/a2a_user_application/01_agent2agent_protocol_communication_plan.md (§6.7, §6.9)
-    - docs/a2a_user_application/02_a2a_implementation_plan.md (Step 7.3)
-    - docs/a2a_user_application/09_a2a_zero_touch_enablement_plan.md (ingest → auto-enable)
-    - forloop-project-base/.forloop/template/forloop-manifest.example.json (canonical shape)
-    - forloop-project-base/.forloop/template/scripts/validate-manifest.mjs (enforced rules)
+    # Paths relative to the app repo root (this is the development environment).
+    - forloop-manifest.example.json   # canonical manifest shape
+    - scripts/validate-manifest.mjs   # the enforced rule set
 triggers: story adds/changes app endpoints, manifest validation, build-complete
 ---
 
@@ -48,13 +46,13 @@ the agent ends up with no contract. Start from
   "application": {
     "name": "My App",                      // REQUIRED string
     "description": "What the app does",    // optional
-    "baseUrl": "https://app.example.com",  // the app's real API base
-    "auth": {                                 // A2A access mode / user delegation
-      "mode": "none" | "app" | "user",       // default "none" (open to peers); "user"/"app" require a signed acting-for identity
-      "autoProvision": true,                  // allow a first-time user grant to be created
-      "scopes": [ { "id": "read:orders", "tier": "standard" }, { "id": "pay:orders", "tier": "privileged" } ]
-    }                                         // privileged scopes force per-call caller confirmation; no commas in ids
+    "baseUrl": "https://app.example.com"   // the app's real API base (REQUIRED when tools exist)
   },
+  "auth": {                                 // ROOT key — a sibling of `application`, never nested under it
+    "mode": "none" | "app" | "user",       // default "none" (open to peers); "user"/"app" require a signed acting-for identity
+    "autoProvision": true,                  // allow a first-time user grant to be created
+    "scopes": [ { "id": "read:orders", "tier": "standard" }, { "id": "pay:orders", "tier": "privileged" } ]
+  },                                        // privileged scopes force per-call caller confirmation; no commas in ids
   "agentPersona": {
     "instructions": "How the agent serves callers" // optional
   },
@@ -92,8 +90,7 @@ the agent ends up with no contract. Start from
    the same change.** The manifest is build-time knowledge capture — a PR that
    changes the API but not the manifest is incomplete.
 2. **Never edit card JSON manually.** The Agent Card is merged server-side from
-   the manifest (technical) + DB cosmetics (`docs/a2a_user_application/01` D12
-   §6.7). User-edited name/description/tags/publicSkills override the manifest
+   the manifest (technical) + DB cosmetics. User-edited name/description/tags/publicSkills override the manifest
    and survive ingest — do not fight them.
 3. **Mark internal-only tools** with `"internal": true` so the card and
    `publicSkills` can exclude them (auth, healthchecks, admin).
@@ -142,3 +139,8 @@ the agent ends up with no contract. Start from
 At build-complete: run the validation checklist, confirm the manifest diff
 matches the stories shipped, and remind the owner that card cosmetics (name,
 description, tags, publicSkills) belong in the Agent Bridge settings UI.
+
+`forloop-manifest.json` is **required** — the template seeds it at the repo root
+and it must never be deleted (an app with no callable API still ships an empty
+`tools: []`). CI validates it with `--require`, so a missing file fails the
+build; a build-complete with no manifest is not done.

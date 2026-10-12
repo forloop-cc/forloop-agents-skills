@@ -18,9 +18,10 @@ metadata:
   version: "1.0.0"
   category: devops
   sources:
-    - forloop-project-base/.forloop/template/.github/workflows/deploy.yml
-    - forloop-project-base/.forloop/template/docs/KNOWLEDGE.md
-    - forloop-opencode-plugin-developer/skills/devops-deploy
+    # Paths relative to the app repo root (this is the development environment).
+    - .github/workflows/deploy.yml   # the deploy pipeline
+    - docs/KNOWLEDGE.md              # deployment knowledge for the app
+    - devops-deploy                  # sibling skill
 author: ForLoop
 ---
 
