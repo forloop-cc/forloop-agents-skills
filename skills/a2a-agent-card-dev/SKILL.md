@@ -10,7 +10,7 @@ description: >
   tests-only, internal refactors without API changes).
 license: MIT
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   category: development
   sources:
     - docs/a2a_user_application/01_agent2agent_protocol_communication_plan.md (§6.7, §6.9)
@@ -49,7 +49,11 @@ the agent ends up with no contract. Start from
     "name": "My App",                      // REQUIRED string
     "description": "What the app does",    // optional
     "baseUrl": "https://app.example.com",  // the app's real API base
-    "auth": {}                             // optional auth config object
+    "auth": {                                 // A2A access mode / user delegation
+      "mode": "none" | "app" | "user",       // default "none" (open to peers); "user"/"app" require a signed acting-for identity
+      "autoProvision": true,                  // allow a first-time user grant to be created
+      "scopes": [ { "id": "read:orders", "tier": "standard" }, { "id": "pay:orders", "tier": "privileged" } ]
+    }                                         // privileged scopes force per-call caller confirmation; no commas in ids
   },
   "agentPersona": {
     "instructions": "How the agent serves callers" // optional
@@ -74,6 +78,13 @@ the agent ends up with no contract. Start from
   ]
 }
 ```
+
+> **ForLoop Login apps (optional):** when end users sign in with ForLoop (the template's
+> "Log in with ForLoop" button — suggest it by default when the app has end users, but it
+> is not required), the app keys each local user by the ForLoop
+> `sub` (a `User.id`). Agent-callable routes that serve that user read
+> `X-Forloop-Subject: idp:forloop:<User.id>` and scope by it — the same id the
+> user signed in with. See the `a2a-agent-spec` skill for the flow.
 
 ## Update rules (REQUIRED)
 
@@ -105,6 +116,10 @@ the agent ends up with no contract. Start from
 - [ ] Tool `input`/`output` are valid JSON schemas
 - [ ] `examples` cover the main happy path
 - [ ] Internal tools flagged `internal: true`
+- [ ] If the app returns/acts on a **user's** data: `auth.mode` is `user` (or
+      `app` for app-owned) with declared `scopes`, and every agent-callable route
+      reads `X-Forloop-Subject` and scopes by it (`idp:forloop:<User.id>` for apps whose
+      users log in with ForLoop)
 - [ ] `version` bumped when tool behavior changes materially
 - [ ] No duplicate endpoints mapped to different tools unintentionally
 
