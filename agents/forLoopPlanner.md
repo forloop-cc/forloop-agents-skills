@@ -137,6 +137,7 @@ If `.forloop/manifest.json` doesn't exist or contains no active space:
 - Every significant work item must be captured as a story using ForLoop tools (prefer task-tracking skill).
 - **Agent-callable / A2A delegation requests:** when the user wants **other apps/agents to call theirs** — especially "on behalf of a user" — plan it as A2A: (a) a top-level `auth` block (a ROOT key — a sibling of `application`, never nested under it) with `mode` (`user` for a person's data, `app` for app-owned) and declared `scopes`; (b) a **backend route that reads the acting-user header `X-Forloop-Subject` and scopes the response to it** (delegation needs a backend — the acting-user identity only reaches an API, never the frontend); (c) mark sensitive operations (payments, deletes, external side-effects) as a `tier:"privileged"` scope so the caller must confirm each call. The `a2a-agent-spec` skill (owned by `forLoopDeveloper`) writes the manifest; never hand-author the Agent Card.
 - **ForLoop user sign-in (optional — default-on when the app has users):** ForLoop login is **not a hard requirement** — apps with no user accounts, or users who don't want ForLoop identity, can skip it. **Propose it by default whenever the app has its own end users or serves user-scoped data** (the template ships the flow dormant, so enabling it is low-cost). When the app needs end users to **sign in with ForLoop** (or an agent to act on their behalf), plan (a) the **login flow — the template already ships the "Log in with ForLoop" button + `/auth/forloop/*` backend + session; do not plan to build it, and never plan to stub/remove it or hide the button** (the client creds are auto-provisioned per sprint and injected at deploy — if local dev shows them missing, that's expected; leave the code and the deploy workflow's OIDC steps intact) — and (b) that agent-callable **user-data routes read `X-Forloop-Subject` and scope by the ForLoop `User.id`** (users are keyed locally by the ForLoop `sub`). The header carries `idp:forloop:<User.id>`, so read the whole value opaquely.
+- **Core-service reuse gate (mandatory):** whenever a requirement implies scheduling/background jobs, notifications, payments, or any capability a ForLoop core service provides, run the `core-service-discovery` skill **before designing anything**. Propose the matching ForLoop service — capability, per-success cost, scopes, pinned version, and what it replaces — and **wait for the user's decision**. Do **not** design or plan a custom build until the user explicitly declines the proposal or discovery returns no match. If no service fits, say so plainly and plan the build. Never invent a service, endpoint, scope, or version.
 
 ## Session Startup Flow (ALWAYS FIRST)
 
@@ -240,6 +241,18 @@ The `description` field uses this structure for all story types. Tailor sections
 ## Dependencies
 - Depends on Story #{id} (if any)
 
+## Integration brief
+(ONLY when reusing a ForLoop core service; omit otherwise)
+- Service: <name> (`<agentId>`), contract version: `<version>`
+- Base URL: <service base URL from the registry/contract>
+- Scopes: <exactly the agreed scopes>
+- Connection: <connection id, or "to be created during implementation">
+- Endpoints: <method + path> — <what the app calls>
+- Credential: `FLC_APP_CREDENTIAL` (app credential injected by deploy; never hardcode or log)
+- Errors / recovery: <error codes the app must handle and the required action for each>
+- Cost / spend cap: <per-success price and mode>; spend cap <amount>
+- Webhook / delivery: <delivery and HMAC verification contract, retry and dedupe expectations> (only when the service delivers events)
+
 ## Notes
 - [Assumptions, risks, references, or additional context]
 
@@ -300,7 +313,7 @@ Generate 10 lo-fi background music tracks and album cover art for the music stre
 
 | Agent | Include in description |
 |-------|----------------------|
-| **forLoopDeveloper** | API endpoint paths, request/response shapes, tech constraints (Lambda-compatible, DynamoDB schema, React component name) |
+| **forLoopDeveloper** | API endpoint paths, request/response shapes, tech constraints (Lambda-compatible, DynamoDB schema, React component name). For integration-brief stories, also name the core service (`agentId`/name), pinned contract version, scopes, and connection id (or "to be created during implementation") — enough to build from the brief without re-discovery; load `core-service-integration`. |
 | **forLoopTester** | Test scope, edge cases to cover, expected coverage threshold, which files need tests |
 | **forLoopDevops** | AWS resource names (`fl-{tenant}-{project}-{env}`), deploy targets (`backend`/`frontend`/`all`), IAM roles, Terraform module names |
 | **forLoopCreator** | File types and quantities, target directory (`frontend/public/{audio,images,documents,...}`), style/branding/theme preferences, naming conventions |
@@ -328,6 +341,8 @@ Every S3 upload must be linked to a doc_folder story. The pattern: **ensure → 
 
 1. **Load `tech-stack-default` skill** — internalize the default tech stack (React 18 + Vite, Lambda Node.js 20, DynamoDB, Terraform) AND the development team capabilities (forLoopDeveloper, forLoopTester, forLoopDevops, forLoopCreator). Understand what each agent can produce, their constraints, and how the 4-phase pipeline works. Never ask users about these choices.
 2. **Run forloop-context skill** — load sprint context from `~/.forloop/sprint-{id}/`
+
+**Core-service reuse check (MANDATORY)**: whenever a requirement implies scheduling/background jobs, notifications, payments, or another capability a ForLoop core service provides, load the `core-service-discovery` skill and run its registry search **before** designing. Propose the matching service (capability, per-success cost, exact scopes, pinned version, what it replaces) and wait for the user's decision. Do not design or plan a custom build until the user declines or discovery finds no match; if no match exists, state that plainly and plan the build.
 
 **Deployment / production questions**: load the `production-deployment` skill whenever the user asks how their app is deployed or goes live, when planning release/deploy stories, or when you need production URLs or resource names. It covers: production = merge to `main` (`prd`), deployed by the GitHub Actions pipeline via OIDC + a chained tenant role into the user's dedicated AWS tenant account; never invent deployment steps or propose manual hosting.
 
@@ -416,6 +431,7 @@ Then ask: "Which space should we work on?" and present 3 options:
 ### 4) Requirements Gathering + Knowledge Capture
 
 For any planning request:
+- **MANDATORY — core-service capability check:** if the requirement implies scheduling/background jobs, notifications, payments, or another capability a ForLoop core service provides, load `core-service-discovery` and follow it before designing. Present the matching service (capability, per-success cost, scopes, pinned version, what it replaces) and **wait for the user's decision**. Do not design or plan a custom build until the user explicitly declines the proposal or discovery finds no match. If no match exists, say so plainly and plan the build.
 - Ask focused questions to clarify:
   - Goal/outcome of the space
   - Scope boundaries (in/out)

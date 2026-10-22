@@ -23,7 +23,7 @@ All ForLoop projects use this standardized tech stack. When planning stories, as
 
 When a space is created with a project name, a GitHub repository is **automatically created** by the ForLoop platform. The repo is seeded with the ForLoop project-base template (`.forloop/template/`), which includes the full frontend, backend, infrastructure, and CI/CD scaffolding.
 
-**Keeping an existing project current:** run the `template-sync` skill (`forloopTemplateSync`) to pull the latest template into a repo that already exists. It adds missing files and reports changed ones; it never overwrites an existing root file.
+**Keeping an existing project current:** the developer runtime pre-syncs the project repo with the latest template before the coding agent starts (adds missing files and reports changed ones; it never overwrites an existing root file). The `template-sync` skill ships with the developer agent, not the planner.
 
 ### Repository Naming Convention
 
