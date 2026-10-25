@@ -89,6 +89,18 @@ Then I should be redirected to the dashboard
 And I should see a welcome message with my name
 ```
 
+## Design Reference (UI stories)
+
+Any story that changes a user-facing screen must carry the approved design reference (when one exists):
+
+```
+## Design Reference
+- Preview: File #<fileId> `<originalName>` (approved; stored under sprint/{sprintId}/project/design/)
+- Fidelity requirement: Base the implementation on this preview and verify the finished UI against it.
+```
+
+Use the **File ID**, never a presigned URL (those expire). A preview uploaded before story creation is linked to the doc_folder; the File ID in the story brief is what lets the Developer and the sprint design sync find it.
+
 ## Tool Usage
 
 ### Create a story from template (PREFERRED)

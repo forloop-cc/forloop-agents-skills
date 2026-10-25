@@ -58,8 +58,10 @@ The main agent will provide at least:
 Return a structured summary to the main agent:
 
 ```
-{ "status": "SUCCESS" | "FAILED", "url": "<public preview URL>", "page": "<page name>", "sections": ["..."], "designNotes": ["color palette", "font pairing", "layout"] }
+{ "status": "SUCCESS" | "FAILED", "fileId": <uploaded file id>, "fileName": "<originalName>", "url": "<presigned preview URL>", "page": "<page name>", "sections": ["..."], "designNotes": ["color palette", "font pairing", "layout"] }
 ```
+
+Return the **`fileId` and `fileName`** — they are the durable handoff reference. The presigned `url` is for the user to view now; it expires in ~30 minutes and must not be used in story briefs.
 
 ## Constraints
 
@@ -81,7 +83,7 @@ Return a structured summary to the main agent:
 4. Get the doc folder story ID: `forloopAivyDocGet(sprintId={sprintId})` — note the returned story ID
 5. Upload: `forloopFileUpload(filePath=..., sprintId={sprintId}, folder="project/design", storyId={docFolderId})` — note the returned File ID
 6. Get the preview URL: `forloopFileDownloadUrl(fileId={fileId})` — use this pre-signed URL (directly accessible, expires in ~30 min)
-7. Return the structured summary (accessible URL + design notes) to the main agent
+7. Return the structured summary (fileId + fileName + accessible URL + design notes) to the main agent
 
 ## Anti-Patterns
 
@@ -94,3 +96,4 @@ Return a structured summary to the main agent:
 | 5 | Generate multiple pages in one file | One page per file |
 | 6 | Generate the entire HTML in one `write` call | Build incrementally: skeleton first, then one small section per `edit` |
 | 7 | Write a single section of 300+ lines at once | Split each section into smaller ~100-150 line steps |
+| 8 | Return only the presigned preview URL | Return `fileId` + `fileName` (the durable reference) alongside the URL |

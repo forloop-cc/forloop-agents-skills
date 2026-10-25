@@ -42,6 +42,7 @@ After creating or updating a file under:
 - `.forloop/sprint-{id}/knowledge/*`
 - `.forloop/sprint-{id}/plan/*`
 - `.forloop/sprint-{id}/task/*`
+- `.forloop/sprint-{id}/design/*` (approved previews)
 
 Run:
 
@@ -57,8 +58,8 @@ forloopSyncLocalToS3(filePath={path}, sprintId={sprintId}, action=delete)
 
 ## What Gets Synced
 
-- Files under `project/knowledge`, `project/plans`, and `project/tasks` are synced to local `sprint-{id}/knowledge/`, `sprint-{id}/plan/`, and `sprint-{id}/task/`.
-- When folder metadata is unavailable, the sync falls back to filename prefixes: `knowledge-*`, `plan-*`, `task-*`.
+- Files under `project/knowledge`, `project/plans`, `project/tasks`, and `project/design` are synced to local `sprint-{id}/knowledge/`, `sprint-{id}/plan/`, `sprint-{id}/task/`, and `sprint-{id}/design/`.
+- When folder metadata is unavailable, the sync falls back to filename prefixes: `knowledge-*`, `plan-*`, `task-*`, `design-*` (and `*-preview.html`).
 
 ## Compliance
 

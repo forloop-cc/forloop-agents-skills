@@ -266,12 +266,13 @@ forloopFileDelete(fileId=123, confirm=true)
 
 ### Upload ~/.forloop/ Files
 
-**Purpose:** Synchronize planning artifacts to S3 for team access. **Always use `forloopSyncLocalToS3` for `.forloop/` files** — this tool handles presigned uploads and doc_folder linking automatically. Never use `forloopFileUpload` for `.forloop/` knowledge/plan/task files.
+**Purpose:** Synchronize planning artifacts to S3 for team access. **Always use `forloopSyncLocalToS3` for `.forloop/` files** — this tool handles presigned uploads and doc_folder linking automatically. Never use `forloopFileUpload` for `.forloop/` knowledge/plan/task/design files.
 
 **Supported file types:**
 - `~/.forloop/sprint-{id}/knowledge/knowledge-{topic}-{datetime}.md`
 - `~/.forloop/sprint-{id}/plan/plan-{sprintId}-{datetime}.md`
 - `~/.forloop/sprint-{id}/task/task-{sprintId}-{datetime}.md`
+- `~/.forloop/sprint-{id}/design/design-{page}-{datetime}.html` (approved previews)
 
 ### Upload with S3 Folder Organization
 
@@ -301,6 +302,14 @@ forloopSyncLocalToS3(
   folder=project/tasks,
   storyId=<docFolderId>
 )
+
+# Upload approved design preview to project/design (auto-inferred from "design/" prefix)
+forloopSyncLocalToS3(
+  filePath=~/.forloop/sprint-14/design/design-dashboard-20260410-110000.html,
+  sprintId=14,
+  folder=project/design,
+  storyId=<docFolderId>
+)
 ```
 
 **Result - S3 Structure:**
@@ -312,9 +321,13 @@ s3://bucket/sprint/14/
 │   ├── knowledge/
 │   │   ├── knowledge-auth-20260410-093015.md
 │   │   └── knowledge-application.md
-│   └── tasks/
-│       └── task-14-20260410-100000.md
+│   ├── tasks/
+│   │   └── task-14-20260410-100000.md
+│   └── design/
+│       └── design-dashboard-20260410-110000.html
 ```
+
+**Design handoff:** the Developer syncs `project/design/` into `docs/design/` (`forloopSyncS3ToLocal({ sprintId, syncDesign: true })`). Always reference an approved preview by **File ID** in the story brief — not by the presigned URL, which expires.
 
 **Note:** `knowledge-application.md` is not created by the planner — it is uploaded by the `forLoopTaskSupervisor` after each space execution and synced to local via `forloopSyncS3ToLocal`.
 
@@ -490,8 +503,9 @@ forloopFileDelete(fileId=101, confirm=true)
 
 Files are stored in S3 with the following key structure:
 ```
-sprints/{sprintId}/stories/{storyId}/{filename}
+sprint/{sprintId}/{folder}/{filename}
 ```
+For example, an approved design preview is `sprint/{sprintId}/project/design/{filename}`. Access is always per-sprint through the ForLoop API (presigned URLs), never cross-sprint.
 
 ### File Metadata
 

@@ -71,7 +71,7 @@ All ForLoop tools are invoked as **structured function calls**, NOT as CLI comma
 | `forloopFileDelete` | `fileId: number, confirm?: boolean` | Delete file |
 | `forloopSyncAivyFolder` | `sprintId?: number` | Ensure doc_folder exists |
 | `forloopAivyDocGet` | `sprintId?: number` | Get doc_folder story ID |
-| `forloopSyncS3ToLocal` | `sprintId?: number, syncKnowledge?: boolean, syncPlans?: boolean, syncTasks?: boolean` | Sync S3 files to local |
+| `forloopSyncS3ToLocal` | `sprintId?: number, syncKnowledge?: boolean, syncPlans?: boolean, syncTasks?: boolean, syncDesign?: boolean` | Sync S3 files (incl. `project/design/` previews) to local |
 | `forloopSyncLocalToS3` | `filePath: string, sprintId?: number, folder?: string, storyId?: number` | Sync local file to S3 |
 | `forloopAgentQuery` | `query: string, agentKey?: string, sprintId?: number` | Query AI agents |
 | `forloopAgentSuggest` | `type: string, sprintId?: number, storyId?: number, query?: string` | Get AI suggestions (breakdowns, estimates, planning) |
@@ -138,6 +138,8 @@ If `.forloop/manifest.json` doesn't exist or contains no active space:
 - **Agent-callable / A2A delegation requests:** when the user wants **other apps/agents to call theirs** — especially "on behalf of a user" — plan it as A2A: (a) a top-level `auth` block (a ROOT key — a sibling of `application`, never nested under it) with `mode` (`user` for a person's data, `app` for app-owned) and declared `scopes`; (b) a **backend route that reads the acting-user header `X-Forloop-Subject` and scopes the response to it** (delegation needs a backend — the acting-user identity only reaches an API, never the frontend); (c) mark sensitive operations (payments, deletes, external side-effects) as a `tier:"privileged"` scope so the caller must confirm each call. The `a2a-agent-spec` skill (owned by `forLoopDeveloper`) writes the manifest; never hand-author the Agent Card.
 - **ForLoop user sign-in (optional — default-on when the app has users):** ForLoop login is **not a hard requirement** — apps with no user accounts, or users who don't want ForLoop identity, can skip it. **Propose it by default whenever the app has its own end users or serves user-scoped data** (the template ships the flow dormant, so enabling it is low-cost). When the app needs end users to **sign in with ForLoop** (or an agent to act on their behalf), plan (a) the **login flow — the template already ships the "Log in with ForLoop" button + `/auth/forloop/*` backend + session; do not plan to build it, and never plan to stub/remove it or hide the button** (the client creds are auto-provisioned per sprint and injected at deploy — if local dev shows them missing, that's expected; leave the code and the deploy workflow's OIDC steps intact) — and (b) that agent-callable **user-data routes read `X-Forloop-Subject` and scope by the ForLoop `User.id`** (users are keyed locally by the ForLoop `sub`). The header carries `idp:forloop:<User.id>`, so read the whole value opaquely.
 - **Core-service reuse gate (mandatory):** whenever a requirement implies scheduling/background jobs, notifications, payments, or any capability a ForLoop core service provides, run the `core-service-discovery` skill **before designing anything**. Propose the matching ForLoop service — capability, per-success cost, scopes, pinned version, and what it replaces — and **wait for the user's decision**. Do **not** design or plan a custom build until the user explicitly declines the proposal or discovery returns no match. If no service fits, say so plainly and plan the build. Never invent a service, endpoint, scope, or version.
+- **Paid-integration wallet pre-check (mandatory):** before writing the integration brief or dispatching the Developer for a paid core service (`billingPrice > 0`), call `a2a_check_wallet({ agentId, quantity })`. Quote the app wallet's available balance, the target's unit price, the estimate, and any shortfall. If `shortfall > 0`, tell the user to top up the app wallet **before the Developer starts**; do not start an unfunded integration (it fails at runtime with `402 insufficient_balance`). This tool is read-only — it does not move funds, so never claim you funded or reserved anything.
+- **Connection approval is a user action, never something you can record.** After the user agrees, call `core_service_integration_request` and give them its app-room link plus the four steps verbatim (open **Aivy Actions → App Connections (Beta) → Connect**, choose **This app**, click **Connect**, copy the **Connection ID**). Do not say a request is "recorded" or "pending in the UI" — nothing exists until they click Connect, and `/permissions` does not list planned grants. If they cannot complete it, write `Connection: to be created during implementation` in the integration brief and continue; do not block the plan and do not ask again.
 
 ## Session Startup Flow (ALWAYS FIRST)
 
@@ -257,9 +259,12 @@ The `description` field uses this structure for all story types. Tailor sections
 - [Assumptions, risks, references, or additional context]
 
 ## Design Reference
-- Preview: <S3 URL of approved HTML mockup> (ONLY for stories with an approved design preview)
+- Preview: File #<fileId> `<originalName>` (approved; stored under sprint/{sprintId}/project/design/ — download with forloopFileDownload({fileId}) or read it from docs/design/)
 - Design notes: <color palette, font pairing, layout decisions from the designer>
+- Fidelity requirement: The Developer MUST base the implementation on this preview and verify the finished UI against it before marking the story complete.
 ```
+
+**Design Reference is MANDATORY for every story that changes a user-facing screen** when an approved preview exists. Reference the **File ID** (not a presigned URL — those expire in ~30 minutes). The preview is uploaded to `project/design` and linked to the doc_folder; that does not make it visible to the Developer automatically, so the story brief and the developer dispatch message must both name the File ID. Stories without a design change may omit this section.
 
 **Example (Developer story):**
 ```
@@ -332,6 +337,7 @@ Every S3 upload must be linked to a doc_folder story. The pattern: **ensure → 
 | `~/.forloop/sprint-{id}/plan/*` | `project/plans/` | `"project/plans"` |
 | `~/.forloop/sprint-{id}/task/*` | `project/tasks/` | `"project/tasks"` |
 | `~/.forloop/sprint-{id}/knowledge/*` | `project/knowledge/` | `"project/knowledge"` |
+| `~/.forloop/sprint-{id}/design/*` | `project/design/` | `"project/design"` |
 
 ## Default Workflow
 
@@ -343,6 +349,8 @@ Every S3 upload must be linked to a doc_folder story. The pattern: **ensure → 
 2. **Run forloop-context skill** — load sprint context from `~/.forloop/sprint-{id}/`
 
 **Core-service reuse check (MANDATORY)**: whenever a requirement implies scheduling/background jobs, notifications, payments, or another capability a ForLoop core service provides, load the `core-service-discovery` skill and run its registry search **before** designing. Propose the matching service (capability, per-success cost, exact scopes, pinned version, what it replaces) and wait for the user's decision. Do not design or plan a custom build until the user declines or discovery finds no match; if no match exists, state that plainly and plan the build.
+
+**Paid-integration wallet check (MANDATORY)**: once a paid core service is agreed, call `a2a_check_wallet({ agentId, quantity })` before writing the brief/dispatching the Developer. Report available balance, estimate, and shortfall. If short, ask the user to top up the app wallet first; never start the Developer on an unfunded integration. The check is read-only.
 
 **Deployment / production questions**: load the `production-deployment` skill whenever the user asks how their app is deployed or goes live, when planning release/deploy stories, or when you need production URLs or resource names. It covers: production = merge to `main` (`prd`), deployed by the GitHub Actions pipeline via OIDC + a chained tenant role into the user's dedicated AWS tenant account; never invent deployment steps or propose manual hosting.
 
@@ -431,7 +439,7 @@ Then ask: "Which space should we work on?" and present 3 options:
 ### 4) Requirements Gathering + Knowledge Capture
 
 For any planning request:
-- **MANDATORY — core-service capability check:** if the requirement implies scheduling/background jobs, notifications, payments, or another capability a ForLoop core service provides, load `core-service-discovery` and follow it before designing. Present the matching service (capability, per-success cost, scopes, pinned version, what it replaces) and **wait for the user's decision**. Do not design or plan a custom build until the user explicitly declines the proposal or discovery finds no match. If no match exists, say so plainly and plan the build.
+- **MANDATORY — core-service capability check:** if the requirement implies scheduling/background jobs, notifications, payments, or another capability a ForLoop core service provides, load `core-service-discovery` and follow it before designing. Present the matching service (capability, per-success cost, scopes, pinned version, what it replaces) and **wait for the user's decision**. Do not design or plan a custom build until the user explicitly declines the proposal or discovery finds no match. If no match exists, say so plainly and plan the build. For a paid service, run `a2a_check_wallet({ agentId, quantity })` before the brief/Developer dispatch and surface any shortfall as a top-up ask.
 - Ask focused questions to clarify:
   - Goal/outcome of the space
   - Scope boundaries (in/out)
@@ -442,7 +450,10 @@ For any planning request:
 **Proactively offer design previews:**
 - If the request involves a user-facing UI (page, screen, component, dashboard), proactively offer: "Would you like me to draft a design preview for this before we create stories?"
 - If the user agrees, dispatch `@forLoopDesigner`, present the returned preview URL + design notes, and iterate on feedback until approved.
-- **If `@forLoopDesigner` fails or times out:** draft the HTML preview yourself (self-contained HTML/CSS, default ForLoop aesthetics), then upload it following the doc-folder flow: `forloopSyncAivyFolder(sprintId={sprintId})` → `forloopAivyDocGet(sprintId={sprintId})` → `forloopFileUpload(filePath=..., sprintId={sprintId}, folder="project/design", storyId={docFolderId})` → `forloopFileDownloadUrl(fileId={fileId})` for the preview URL. Never leave a drafted preview un-uploaded — always upload and present the accessible URL.
+- **Capture the File ID, not just the URL.** After approval, record the returned `fileId` + `originalName`. A presigned URL expires (~30 min) and must never be the handoff reference.
+- Put that `File #<id> <originalName>` in the `## Design Reference` block of **every** UI story created from the approved preview.
+- When you trigger the Developer, include the approved artifact line in the dispatch message, e.g. `Approved design preview: File #281 booking-app-preview.html (also synced to docs/design/); base the UI on it and verify the result against it.`
+- **If `@forLoopDesigner` fails or times out:** draft the HTML preview yourself (self-contained HTML/CSS, default ForLoop aesthetics), then upload it following the doc-folder flow: `forloopSyncAivyFolder(sprintId={sprintId})` → `forloopAivyDocGet(sprintId={sprintId})` → `forloopFileUpload(filePath=..., sprintId={sprintId}, folder="project/design", storyId={docFolderId})` → note the returned **File ID** and use `forloopFileDownloadUrl(fileId={fileId})` only to show the preview to the user. Never leave a drafted preview un-uploaded — always upload and present the accessible URL.
 
 **Auto-capture knowledge during Q&A:**
 - Use `knowledge-management` skill

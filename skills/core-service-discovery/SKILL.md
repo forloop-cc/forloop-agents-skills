@@ -66,6 +66,24 @@ For each viable candidate, present:
 - **Data flow** — what data leaves the app, where it goes, and what comes back
 - **What it replaces** — the code or infrastructure the app no longer needs to build
 
+### 4b. Check the app wallet before build (paid services)
+
+A paid service debits the app wallet (`APP:<sprint publicId>`), not the user's
+personal wallet. Before writing the brief or dispatching the Developer, call:
+
+```
+a2a_check_wallet({ agentId: "<agentId>", quantity: <expected billable units> })
+```
+
+Quote the available balance, the unit price, the estimate, and the shortfall it
+returns. If `shortfall > 0`, tell the user to top up the app wallet **before the
+Developer starts** (otherwise the first call fails with `402
+insufficient_balance`). If the tool reports `price TBD`, say the cost is not yet
+published rather than inventing one.
+
+This tool is read-only. Never claim you funded, reserved, or moved credits — the
+planner cannot move funds.
+
 ### 5. Wait for agreement, then request the connection
 
 Create nothing until the user agrees. On agreement, call:
@@ -78,10 +96,10 @@ core_service_integration_request({
 })
 ```
 
-This tool does **not** create a connection and never handles credentials. It returns:
+This tool does **not** create a connection and never handles credentials. It also does **not** store a pending request — nothing exists until the user clicks **Connect**. It returns:
 
-- a pending request for the user to approve in the UI (the `…/myspace?connect=<agentId>` link), and
-- the **app-subject connection payload** the owner/developer submits later:
+- a deep link to this app's **App Connections → Connect** panel with the service, scopes and `This app` subject preselected (the `…/myspace/<appPublicId>?connect=<agentId>…` link), and
+- the **app-subject connection payload** for reference:
 
 ```json
 {
@@ -92,9 +110,9 @@ This tool does **not** create a connection and never handles credentials. It ret
 }
 ```
 
-The planner must not call `POST /api/a2a/connections` itself — that route is Clerk-session (owner UI) auth, not planner-token auth. Wait for the user to approve and provide the connection id. If the UI cannot set `subjectType: "app"`, hand the payload to the user and wait.
+Present the link and its four steps exactly as returned. The user must open the app's space, click **Connect**, and copy the **Connection ID**. The planner must not call `POST /api/a2a/connections` itself — that route is Clerk-session (owner UI) auth, not planner-token auth. Never say a request is "recorded" or "pending in the UI"; the Permissions page only shows parked task consents, not this planned grant.
 
-After approval, confirm or set the spend cap through the user/UI. Never read, print, or store credentials.
+If the user cannot complete the approval, write `Connection: to be created during implementation` in the brief and continue. Do not block the plan and do not ask again. When the user does provide a connection id, use it. After approval, confirm or set the spend cap through the user/UI. Never read, print, or store credentials.
 
 ### 6. Write the integration brief into the story
 
@@ -105,11 +123,12 @@ Use this template verbatim:
 - service: <name> (<agentId>), kind: <system|user>, contract version: <version>
 - base URL: <baseUrl>
 - scopes: <list>
-- connection: <connection id, or "pending user approval">
+- connection: <connection id, or "to be created during implementation">
 - endpoints: <method + path per tool>
 - auth: app credential (flc_app_) → POST /api/opencode/a2a/connections/:id/assertion → Authorization: Bearer <assertion>
 - errors: invalid_credential | revoked | expired | insufficient_scope | not_direct_integrable | app_not_found | contract_version_required | contract_version_not_found | contract_version_retired
 - cost: <billingPrice / billingUnit>; spend cap: <amount>
+- wallet: <available balance> / <estimate>; <"funded" or "top up X FLC before implementation">
 - acceptance: <observable behaviour>
 - docs: contract <version> via core_service_get({ agentId, version })
 ```
@@ -119,7 +138,9 @@ Use this template verbatim:
 - Propose only services returned by `core_services_search`; never invent a service.
 - Never invent an endpoint, scope, version, base URL, or price. Quote the registry and the pinned contract.
 - Always surface cost and scopes before asking for agreement.
+- For a paid service, run `a2a_check_wallet` and surface the balance, estimate, and shortfall before the brief/Developer dispatch. Never let an unfunded integration reach runtime (`402 insufficient_balance`).
 - Never create a connection, grant, or spend cap before the user agrees — and never create one from the planner at all.
+- Never claim a connection request was recorded, stored, or is pending approval. Only the user's **Connect** click creates it.
 - Never use curl, wget, or construct API URLs directly.
 - Never handle, log, or store credentials.
 - If no listed service fits, say so plainly and plan to build the capability instead.
