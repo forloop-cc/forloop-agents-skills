@@ -9,7 +9,7 @@ description: >
   estimating story points (use story-points).
 license: MIT
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   category: planning
   sources:
     - INVEST criteria (agile modeling)
@@ -51,7 +51,7 @@ digraph story_creation {
     "Apply INVEST criteria" -> "Write user story draft" [label="fails"];
     "Apply INVEST criteria" -> "Define acceptance criteria" [label="passes"];
     "Define acceptance criteria" -> "Determine priority";
-    "Determine priority" -> "Create in ForLoop" [label="forloopStoryCreate"];
+    "Determine priority" -> "Create in ForLoop" [label="forloopStoryTemplate"];
 }
 ```
 
@@ -89,6 +89,35 @@ Then I should be redirected to the dashboard
 And I should see a welcome message with my name
 ```
 
+### UI acceptance criteria (mandatory)
+
+Every UI story's acceptance criteria must include:
+
+1. **Direct-route load:** `Given I open <route> directly, When the route loads, Then <the named screen renders>` (deep-linkable, no reliance on the previous page).
+2. **Signed-out redirect/return (gated routes):** `Given I am signed out, When I open <route>, Then I am redirected to <login>, and after signing in I return to <route>`.
+3. **Data states (data screens):** loading, empty, and error are each observable, with the expected copy/action.
+4. **Mobile:** the named route renders without horizontal scroll at the supported mobile breakpoint and the primary action remains reachable.
+5. **Navigation:** the story's entry points, redirects, and return path behave as described in its `## Screen / Route` block.
+
+## Screen / Route (UI stories)
+
+Every UI story is scoped to exactly one screen/route from the approved surface inventory. Put this block in the description, next to `## Design Reference`:
+
+```
+## Screen / Route
+- Screen: <screen name, or "App shell / nav">
+- Route: </path, or `*` for the shell>
+- Preview frame: <frame label> (File #<fileId>)
+- States: default, loading, empty, error, signed-in, signed-out, return-to-intended
+- Navigation: <entry points, redirects, return path>
+```
+
+- One story per screen/route; the shell/nav is its own story.
+- `/` always counts as a screen. If it redirects, the redirect target and signed-in/out behaviour are part of the story.
+- A UI story without a route is incomplete — do not create it and do not dispatch it.
+- Do not create UI stories until every inventory route has a story or is explicitly `out-of-scope:<reason>`.
+
+
 ## Design Reference (UI stories)
 
 Any story that changes a user-facing screen must carry the approved design reference (when one exists):
@@ -96,10 +125,12 @@ Any story that changes a user-facing screen must carry the approved design refer
 ```
 ## Design Reference
 - Preview: File #<fileId> `<originalName>` (approved; stored under sprint/{sprintId}/project/design/)
-- Fidelity requirement: Base the implementation on this preview and verify the finished UI against it.
+- Frame: `<frame label>` for `<route>`
+- Design notes: <color palette, font pairing, layout decisions>
+- Fidelity requirement: Base the implementation on this preview frame and verify the finished UI against it.
 ```
 
-Use the **File ID**, never a presigned URL (those expire). A preview uploaded before story creation is linked to the doc_folder; the File ID in the story brief is what lets the Developer and the sprint design sync find it.
+Use the **File ID**, never a presigned URL (those expire). A preview uploaded before story creation is linked to the doc_folder; the File ID in the story brief is what lets the Developer and the sprint design sync find it. The preview may contain multiple labelled frames — name the one this story implements in both `## Design Reference` and `## Screen / Route`.
 
 ## Tool Usage
 
@@ -109,7 +140,7 @@ Use the **File ID**, never a presigned URL (those expire). A preview uploaded be
 ```
 forloopStoryTemplate(
   templateSlug=basic-task,
-  taskTitle="As a user, I want to reset my password",
+  taskTitle="Implement password reset request",
   description="Users can request password reset via email",
   sprintId=<id>,
   priority=high,
@@ -121,7 +152,7 @@ forloopStoryTemplate(
 ```
 forloopStoryTemplate(
   templateSlug=basic-note,
-  taskTitle="As a user, I want to reset my password",
+  taskTitle="Document the password reset flow",
   description="Users can request password reset via email",
   sprintId=<id>,
   priority=high
@@ -227,6 +258,9 @@ Before creating story, verify:
 | 5 | Create stories > 5 points | Split into smaller stories |
 | 6 | Implement code during story creation | This is planning-only — use `forloopStoryTemplate` tool |
 | 7 | Create stories without a template | Always use `templateSlug=basic-task` or `basic-note` |
+| 8 | Write a UI story without a route | Add the `## Screen / Route` block with a concrete route from the approved surface inventory; the shell uses `*` |
+| 9 | Combine several screens into one UI story | One story per screen/route; the shell/nav is its own story |
+| 10 | Use a presigned preview URL as the reference | Use the durable File ID + frame label |
 
 ## Quality Gates
 

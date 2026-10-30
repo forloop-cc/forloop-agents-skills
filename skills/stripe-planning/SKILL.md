@@ -20,7 +20,7 @@ metadata:
   sources:
     - Stripe official skills (docs.stripe.com/skills)
     - ForLoop project-base template (.forloop/template/)
-    - ForLoop catalog sync planning docs (docs/user_application_development/01-12)
+    - ForLoop catalog sync platform design (internal)
 triggers:
   - "stripe"
   - "payment"
@@ -869,9 +869,8 @@ Always upload files to S3 after writing them.
 Plan around this from the start — it is NOT a post-sync add-on:
 
 - **Admin portal** = authoring + import + preview + apply surface (change-sets
-  and import batches, see
-  `docs/user_application_development/09-stripe_catalog_admin_mutation_flow.md`
-  and `docs/user_application_development/12-stripe_catalog_sprint_space_product_management.md`).
+  and import batches; the platform catalog design is internal and not shipped
+  in this runtime).
 - **User backend** = the orchestration client; it mediates to `server_lambda`
   with a short-lived service token (scopes `catalog.preview/apply/read/retry`),
   never exposing secrets or Stripe to the browser.

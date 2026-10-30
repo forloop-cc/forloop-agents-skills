@@ -102,7 +102,7 @@ Try saying: _"@forLoopStoryEvaluator break down our authentication feature and e
 
 Skills are organized by category. Agents load them automatically when they detect a matching trigger.
 
-### Planning (11 skills)
+### Planning (13 skills)
 
 The core planning workflow — from sprint setup through execution.
 
@@ -114,11 +114,13 @@ The core planning workflow — from sprint setup through execution.
 | **task-tracking** | Generate actionable task lists from plan documents. Estimates points, applies templates, creates stories in ForLoop, and maintains synchronized task files. |
 | **template-based-tasks** | Transform natural language into structured ForLoop stories using Basic Task and Basic Note templates. Ensures consistent metadata for AI agents and collaboration. |
 | **plan-documentation** | Create and maintain sprint plan documents with user confirmation. Stored in `~/.forloop/sprint-{id}/plan/`, synced to S3 for team access. |
+| **preview-scoping** | Define the Planner-owned app surface inventory (surface, route, type, class, states, story) and get explicit user approval before offering an app preview. Covers hard rules, user checklist, scaling by flow, and the manual pressure test. |
 | **agent-auto-assignment** | Automatically match stories to the right AI agent based on story type and intent. Classifies work as planning, development, or deployment. |
 | **forloop-context** | Session startup — loads knowledge, plans, and tasks from `~/.forloop/` for continuity. Resolves sprint ID from manifest, env var, or git branch. |
 | **tech-stack-default** | Standardized ForLoop tech stack defaults (React 18 + Vite, Lambda Node.js 20, DynamoDB, Terraform). Assumed automatically during planning — never asks for confirmation. |
 | **knowledge-management** | Capture project learnings and technical decisions automatically. Syncs to S3 for team-wide access. |
 | **production-deployment** | How a project reaches production in the user's dedicated tenant AWS account: `main` → `prd` trigger, GitHub Actions OIDC + chained tenant role, tenant resource naming/production URLs, verification, and rollback. |
+| **realtime-planning** | Plan a ForLoop Realtime integration for a user app: channel (test first, never promote), audience/dimensions, allowed origins, event catalog, delivery sink (direct receiver vs platform inbox), live-event cost, and the realtime-specific integration brief. |
 
 ### Administration (4 skills)
 

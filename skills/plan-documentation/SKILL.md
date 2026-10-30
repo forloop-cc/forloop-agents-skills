@@ -8,7 +8,7 @@ description: >
   single story requests (use story-creation), or without user confirmation workflow.
 license: MIT
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   category: planning
   sources:
     - ForLoop plan documentation guidelines
@@ -124,6 +124,15 @@ Ask: "Found existing plan. Update or create new?"
 
 6. Success Criteria
    How do we measure success?
+
+7. App Surface (multi-screen UI only — load preview-scoping)
+   What is the entry/root route and what does it show or redirect to?
+   What is the app shell / navigation layout?
+   Is authentication required? Which routes are gated, and where does signed-out return after login?
+   Does the app have users (and therefore settings)? Which settings surface?
+   For each data screen, what are the loading, empty, and error states?
+   Which template routes (/, /health, /users, /checkout, /success, /pricing, /auth/forloop/*, /admin, /admin/:resourceKey) are in scope, out-of-scope, or still need a story?
+   How should the app be grouped into flows for preview and story breakdown?
 ```
 
 ### Step 3: Summarize Requirements
@@ -142,6 +151,8 @@ In Scope:
 Out of Scope:
 - {Item 1}
 - {Item 2}
+
+App Surface Inventory: {surface count} surfaces, {in-preview} in-preview, {out-of-scope} out-of-scope (approved: {yes/no})
 
 Timeline: {start} to {end} ({days} days)
 
@@ -206,6 +217,23 @@ active: true
 ### Out of Scope
 - {Excluded 1}
 - {Excluded 2}
+
+## App Surface Inventory
+
+(Required for multi-screen user-facing apps. Load `preview-scoping`; the user must approve this table before an app preview is offered.)
+
+| Surface | Route | Type | Class | States | Story |
+|---------|-------|------|-------|--------|-------|
+| {Home} | `/` | page (entry) | `in-preview` | default, loading, empty, error, signed-in, signed-out | #{id} |
+| {App shell / nav} | `*` | layout | `in-preview` | signed-in, signed-out | #{id} |
+| {Screen} | `/{route}` | page | `in-preview` | default, loading, empty, error | #{id} |
+| {Template route} | `/{route}` | page | `out-of-scope:{reason}` | — | — |
+
+- **Route map:** `{route → screen/frame}` from the Designer return.
+- **Preview:** File #{fileId} `{fileName}` (frames: {labels}); out-of-scope: {list}.
+- **Approved by user:** {yes/no + date}.
+- Template baseline routes dispositioned: `/`, `/health`, `/users`, `/checkout`, `/success`, `/pricing`, `/auth/forloop/callback`, `/auth/forloop/launch`, `/admin`, `/admin/:resourceKey`.
+- `/` is always in scope; a redirect is a decision.
 
 ## Requirements
 
@@ -368,6 +396,8 @@ forloopSyncLocalToS3(
 Before completing:
 - [ ] Space goal is clear and measurable
 - [ ] Scope boundaries defined (in/out)
+- [ ] For multi-screen UI: App Surface Inventory present, every template route dispositioned, and the user explicitly approved it before any app preview
+- [ ] For multi-screen UI: every `in-preview` row has a concrete route and a story; `/` has a decision
 - [ ] Timeline with specific dates
 - [ ] Requirements detailed
 - [ ] Dependencies identified
@@ -382,6 +412,7 @@ Before completing:
 |-------|-------------|
 | `knowledge-management` | Captures planning decisions |
 | `task-tracking` | Reads plan for task creation |
+| `preview-scoping` | Builds and validates the app surface inventory for multi-screen UI plans |
 | `sprint-planning` | Sub-workflow of sprint-planning |
 | `file-management` | S3 upload pattern |
 | `forloop-context` | Loads plan on session start |
@@ -446,6 +477,8 @@ forloopSpaceSprintGet(sprintId={id})
 | 5 | Skip doc_folder linking | Link to doc_folder story for organization |
 | 6 | Use vague space goals | Goals must be clear and measurable |
 | 7 | Skip in-scope/out-of-scope boundaries | Define both explicitly |
+| 8 | Plan a multi-screen UI without an App Surface Inventory | Load `preview-scoping`, disposition every template route, and get user approval |
+| 9 | Offer an app preview before the inventory is approved | Inventory + explicit approval first; capture-mode single pages are exempt |
 
 ## Quality Gates
 

@@ -8,7 +8,7 @@ description: >
   single ad-hoc stories (use story-creation directly), or without user confirmation.
 license: MIT
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
   category: planning
   sources:
     - ForLoop task tracking documentation
@@ -83,6 +83,7 @@ Get plan file from manifest. If missing, scan `~/.forloop/sprint-{sprintId}/plan
 - In-scope features
 - Requirements
 - Constraints
+- Approved app surface inventory (surface, route, class, states, story) and route map, when the plan includes UI work
 
 ### Step 2: Break Down into Tasks
 
@@ -103,6 +104,8 @@ Tasks:
 - Each task = one user story
 - Tasks are independent (INVEST)
 - Tasks deliver user value
+
+**UI plans are broken down from the approved surface inventory.** If the plan has one, create exactly one story per `in-preview` screen/route plus one story for the shell/nav. Do not invent screens, bundle routes, or skip a route because it "just redirects" — `/` is a route decision and gets a story or an explicit out-of-scope disposition. Every UI story carries the `## Screen / Route` block (screen, route, preview frame, states, navigation) and the preview File ID. If a UI plan has no approved inventory, stop and run `preview-scoping` before breaking it down.
 
 ### Step 3: Estimate Story Points
 
@@ -155,13 +158,13 @@ assigneeAgentKey: forLoopDeveloper
 ```
 📋 Proposed Task Breakdown for Space #14
 
-| # | Task | Agent | Template | Points | Priority |
-|---|------|-------|----------|--------|----------|
-| 1 | Registration API | forLoopDeveloper | basic-task | 5 | high |
-| 2 | Login endpoint | forLoopDeveloper | basic-task | 3 | high |
-| 3 | Password reset | forLoopDeveloper | basic-task | 5 | medium |
-| 4 | JWT generation | forLoopDeveloper | basic-task | 5 | high |
-| 5 | Auth middleware | forLoopDeveloper | basic-task | 3 | high |
+| # | Task | Route | Frame | Agent | Template | Points | Priority |
+|---|------|-------|-------|-------|----------|--------|----------|
+| 1 | Registration API | — | — | forLoopDeveloper | basic-task | 5 | high |
+| 2 | Login endpoint | — | — | forLoopDeveloper | basic-task | 3 | high |
+| 3 | Password reset | — | — | forLoopDeveloper | basic-task | 5 | medium |
+| 4 | JWT generation | — | — | forLoopDeveloper | basic-task | 5 | high |
+| 5 | Auth middleware | — | — | forLoopDeveloper | basic-task | 3 | high |
 
 **Agent Assignment Rules:**
 - Implementation/features/bug fixes → `forLoopDeveloper`
@@ -177,6 +180,8 @@ assigneeAgentKey: forLoopDeveloper
 The Creator returns a structured JSON report with file paths — use this report when writing the Developer story's description to reference correct paths (e.g., `<audio src="/audio/track.mp3" />`).
 
 Total: 5 stories, 21 points
+
+UI rows: Route and Frame are mandatory; use `*` for the shell/nav and the preview frame label from the approved inventory. Non-UI rows show "—".
 
 Confirm I should create these stories in ForLoop?
 ```
@@ -311,6 +316,11 @@ and are always visible regardless of the active iteration.
 - **Template:** {slug}
 - **Points:** {pts}
 - **Priority:** {priority}
+- **Screen:** {screen name or "App shell / nav"} (UI stories only)
+- **Route:** {/path or * for shell} (UI stories only)
+- **Frame:** {preview frame label} (File #{fileId})
+- **States:** {default, loading, empty, error, signed-in, signed-out, return}
+- **Navigation:** {entry points, redirects, return path}
 - **Description:**
   ```
   As a {user}, I want {feature}, so that {benefit}
@@ -566,12 +576,19 @@ Always call story-points skill before story creation. If estimation fails, use d
 | 7 | Skip manifest update | Always update `~/.forloop/manifest.json` with v2 format |
 | 8 | Skip verification after story creation | Run `forloopSpaceSprintGet(sprintId={sprintId}, includeStories=true)` |
 | 9 | Create task stories without `templateSlug=basic-task` | ALWAYS use `templateSlug=basic-task` for all task breakdown stories |
+| 10 | Break down a UI plan without the approved surface inventory | Load `preview-scoping`, approve the inventory, then create one story per screen/route |
+| 11 | Create a UI story without a route | Add the `## Screen / Route` block; `/` is a route, and the shell uses `*` |
+| 12 | Leave an inventory route with no story | Cover every route or mark it `out-of-scope:<reason>` before dispatch |
 
 ## Quality Gates
 
 - [ ] `knowledge-application.md` reviewed (understand current architecture before task breakdown)
 - [ ] Developer task status checked via `forloopDeveloperStatus` (don't over-assign if ECS is running)
 - [ ] Plan document read and extracted
+- [ ] Approved app surface inventory + route map extracted for UI work
+- [ ] Every inventory route has a story or is explicitly `out-of-scope:<reason>`
+- [ ] One story per screen/route; shell/nav has its own story
+- [ ] Every UI story has a `## Screen / Route` block (screen, route, frame, states, navigation)
 - [ ] Tasks broken down from plan (INVEST-compliant)
 - [ ] Points estimated for every story (default 3 if unsure)
 - [ ] Templates applied to each task
@@ -600,6 +617,8 @@ Always call story-points skill before story creation. If estimation fails, use d
 | "Points weren't estimated, I'll skip them" | ALWAYS assign points (default to 3 if unsure) |
 | "Stories suitable for agents left unassigned" | Check task type, assign to correct agent |
 | "Files uploaded to wrong S3 folder" | Use --folder parameter, verify with forloopFileList |
+| "The inventory has too many rows, one story can cover them" | One story per screen/route; the route coverage gate exists for a reason |
+| "That route just redirects, skip it" | `/` is always a decision; record the redirect and its states |
 
 ---
 
