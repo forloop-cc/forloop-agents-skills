@@ -9,7 +9,7 @@ description: >
   estimating story points (use story-points).
 license: MIT
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
   category: planning
   sources:
     - INVEST criteria (agile modeling)
@@ -173,6 +173,34 @@ forloopStoryTemplate(
 **Multi-agent split:** If a story involves BOTH file generation AND code integration (e.g., "Generate music and build audio player"), split into two stories:
 - Story A: Creator generates files → `assigneeAgentKey=forLoopCreator`, 1-2 pts
 - Story B: Developer integrates files → `assigneeAgentKey=forLoopDeveloper`, 2-5 pts (depends on Story A)
+
+### A2A setup / "manifest required" request
+
+When the user pastes an A2A setup request (or the platform's **manifest
+required** prompt) asking to make an app connectable, create **one story**
+assigned to `forLoopDeveloper` — do not implement the manifest yourself:
+
+- Title: `Add forloop-manifest.json for <app name>`
+- Assignee: `forLoopDeveloper`
+- Template: `basic-task`
+- Description: include the app name, sprint id, publicId, and repo full name
+  from the prompt, then paste the platform's setup request. It already carries
+  the required steps:
+  1. run `forloopTemplateSync` first;
+  2. start from `forloop-manifest.example.json` and add
+     `forloop-manifest.json` at the repo root;
+  3. fill name/persona/instructions honestly; tools only for existing `/v1`
+     endpoints, otherwise `tools: []`;
+  4. run `node scripts/validate-manifest.mjs`;
+  5. commit to `main` and deploy (the deploy workflow ingests the manifest after
+     a successful backend deploy);
+  6. re-check the app in App Connections and turn availability on.
+- Acceptance criteria: the file exists at the repo root, the validator prints
+  PASS, the deploy's manifest ingest step succeeds (409 is non-fatal), and the
+  app reports `manifestReady: true` with availability enabled.
+
+Do not create a separate "enable the app" story: enabling is the last step of
+this story, after the manifest is ingested.
 
 ### Create a story directly (use only for doc_folder types)
 ```
