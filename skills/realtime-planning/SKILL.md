@@ -81,7 +81,10 @@ audiences — plan a second channel instead.
 - **Direct HTTPS receiver** — when the app backend has a public HTTPS host.
   The verification challenge is path-scoped
   (`<baseUrl>/.well-known/forloop-scheduler-verify`); a root-level webhook host
-  is cleanest.
+  is cleanest. **Dev caveat:** the dev API Gateway source-IP allowlist 403s
+  platform deliveries (Lambda egress has no fixed IP). Prefer the platform
+  inbox for a dev receiver, or plan to set `ip_allowlist_enabled = false` on
+  the receiver; never weaken HMAC as a workaround.
 - **Platform Webhook inbox** — when the app has no public receiver. Needs a
   second app-subject connection to Webhook (`webhook.inboxes:read/write`,
   `webhook.requests:read`). Inbox retention 7 days, `maxRequests` default 100

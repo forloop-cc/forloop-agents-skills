@@ -67,7 +67,8 @@ contains a deploy tag.
 [deploy frontend] ...   → frontend only
 [deploy backend]  ...   → backend only
 [deploy all]      ...   → both
-[skip deploy]     ...   → no deployment
+[deploy]          ...   → both (bare tag = all)
+[skip deploy]     ...   → no deployment (green no-op)
 ```
 
 Environment is derived from the **branch**, never from the tag:
@@ -87,8 +88,9 @@ Environment is derived from the **branch**, never from the tag:
   deploy tag).
 - **forLoopTester** validates locally and must return `PASS`.
 - **forLoopDevops** is the **only** agent allowed to add `[deploy]`, `[e2e]`,
-  `[teardown]`, `[debug]`, `[rollback]` tags. It commits the tag, watches the
-  pipeline, and reports the production URLs.
+  `[teardown]`, `[debug]` tags. It commits the tag, watches the pipeline, and
+  reports the production URLs. There is no `[rollback]` workflow tag; rollback
+  is a `git revert` followed by `[deploy ...]`.
 - Committing the tag **is** the deployment. Agents must never use `curl`,
   `gh api`, `gh workflow run`, `terraform apply`, or `aws s3 cp`.
 
@@ -123,13 +125,18 @@ Jobs in `.github/workflows/deploy.yml`:
 4. `deploy-frontend` — build Vite with `VITE_FL_ENV/VITE_DEPLOY_ENV/VITE_MODE/
    VITE_TENANT_ID/VITE_PROJECT_NAME/VITE_API_URL`, sync `frontend/dist/` to S3,
    invalidate CloudFront, then curl the production URL until HTTP 200.
-5. `deploy-backend` — **two-phase Terraform**:
-   - apply #1 creates the **ECR repo + DynamoDB table**,
-   - `docker build` + push to ECR (`{env}-{sha}` tag),
+5. `deploy-backend` — **two-phase Terraform** (push/dispatch only):
+   - apply #1 creates the **ECR repo + DynamoDB table** (only when the ECR repo
+     is missing; re-running it can destroy the live Lambda),
+   - `docker buildx build --platform linux/amd64 --provenance=false --sbom=false
+     --output type=docker` + push to ECR (`{env}-{sha}` tag, retries on 429),
    - apply #2 creates the **Lambda (Image package) + API Gateway routes**,
-   - health check `GET {apiUrl}/health` until 200.
-6. `api-tests` — curl-based API contract tests.
-7. `notify-deployment` — on PR events, tell the ForLoop server.
+   - health check `GET {apiUrl}/health` until 200,
+   - ingest `forloop-manifest.json` (409 = newer stored contract wins).
+   A PR run skips this job (CI still validates the backend).
+6. `api-tests` — required contract tests; a failure is red.
+7. `notify-deployment` — on PR events, tell the ForLoop server only when at
+   least one deploy succeeded (the job uses `always()`).
 
 ## Production resource naming (tenant, `env=prd`)
 
@@ -137,7 +144,7 @@ Jobs in `.github/workflows/deploy.yml`:
 | -------------------- | ------------------------------------------------ | ---------------------------------- |
 | Lambda               | `fl-{tenant}-{project}-{env}`                    | `fl-acme-myapp-prd`                |
 | DynamoDB table       | `fl-{tenant}-{project}-{env}`                    | `fl-acme-myapp-prd`                |
-| ECR repository       | `fl-{accountId}-{tenant}-{project}`              | `fl-123456789012-acme-myapp`       |
+| ECR repository       | `fl-{accountId}-{tenant}-{project}-{env}`        | `fl-123456789012-acme-myapp-prd`   |
 | S3 frontend bucket   | `fl-{accountId}-{tenant}-frontend-{env}`         | `fl-123456789012-acme-frontend-prd`|
 | Lambda IAM role      | `fl-{tenant}-{project}-{env}-lambda-role`        | `fl-acme-myapp-prd-lambda-role`    |
 | CloudWatch log group | `/aws/lambda/fl-{tenant}-{project}-{env}`        | `/aws/lambda/fl-acme-myapp-prd`    |
@@ -162,15 +169,21 @@ s3://fl-{accountId}-{tenant}-tf-state/project/prd/{project}/terraform.tfstate
 
 - Frontend returns HTTP 200 at the production URL.
 - `GET https://api.{tenant}.forloop.cc/prd/{project}/health` returns HTTP 200.
-- API contract tests pass.
-- E2E: trigger with `[e2e all]` (or targeted `[e2e frontend]` / `[e2e backend]`).
+- API contract tests pass (required).
+- `forloop-manifest.json` is ingested after the backend verify (409 = newer
+  stored contract wins; not a deploy failure).
+- E2E: trigger with `[e2e all]` (or targeted `[e2e frontend]` / `[e2e backend]` /
+  `[e2e story]`); missing optional fixtures self-skip and stay green.
 
 ## Rollback
 
-- **Code:** `git revert` the offending merge on `main`, then commit again with a
-  `[deploy ...]` tag (re-deploys the previous code).
-- **Infra:** `[rollback infra]` reverts the Lambda image pointer / ECS task
-  definition; Terraform state can be reverted to a previous revision.
+There is no `[rollback]` trigger in the parser. Roll back by reverting and
+deploying again:
+
+- **Code:** `git revert` the offending merge on `main`, then commit with
+  `[deploy ...]` (re-deploys the previous code).
+- **Infra:** revert the Terraform change (it is in git) and commit `[deploy ...]`.
+- Verify health and the ingested manifest version after the rollback deploy.
 
 ## Common production failure modes
 
@@ -182,6 +195,10 @@ s3://fl-{accountId}-{tenant}-tf-state/project/prd/{project}/terraform.tfstate
 | Frontend not updating           | CloudFront invalidation missing or wrong S3 path.             |
 | Backend 502                     | Lambda crash — check CloudWatch `/aws/lambda/fl-...-prd`.     |
 | `repository does not exist` ECR | First Terraform apply (ECR creation) hasn't run yet.          |
+| `image manifest ... is not supported` | Image lacks `--platform linux/amd64 --provenance=false --sbom=false`. |
+| `Skip output ... may contain secret` | Secret passed as a job output; the job re-fetches it instead. |
+| 403 bare `{"message":"Forbidden"}` | Dev source-IP allowlist, not auth.                          |
+| Release/tag 403 | `permissions: contents: write` missing.                        |
 | API 404 but direct invoke works | `basePath` missing in the Lambda handler.                     |
 
 Use the `deploy-failure-diagnosis` skill (developer side) for the full matrix.
@@ -196,6 +213,7 @@ Use the `deploy-failure-diagnosis` skill (developer side) for the full matrix.
 | Hardcode account IDs or role ARNs              | The broker returns them; derive account via STS   |
 | Invent prod URLs                               | Use the exact `frontendUrl`/`apiUrl` from the deploy report |
 | Confuse `flEnv` (domain suffix) with `ENV`     | See "flEnv vs ENV" below                          |
+| Treat a skipped/benign job as a failure       | No-tag pushes, "nothing to tear down", and self-skipping E2E fixtures are explicitly green |
 
 ## flEnv vs ENV (do not confuse)
 
