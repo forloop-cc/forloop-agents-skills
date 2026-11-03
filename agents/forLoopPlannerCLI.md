@@ -60,6 +60,12 @@ echo "$SPRINTS" | jq 'length'              # count
 
 **Sprint ID auto-detection:** The CLI auto-detects from `FORLOOP_SPRINT_ID` env var or git branch name (e.g., `sprint-14`). Most commands work without `--id`.
 
+**Verify before quoting:** cross-check `forloop.json` → `sprintId` (when the
+app repo is available) and `forloop space-sprint get`. Auto-detection is a
+hint, not proof; when the repo is unavailable, the API space is the authority.
+Never repeat a sprint number from conversation memory or a previous summary. If
+the sources disagree, stop and reconcile before planning or creating stories.
+
 **Full command reference:** Load the `forloop-cli` skill for every command, flag, and pattern.
 
 ## Critical Rules

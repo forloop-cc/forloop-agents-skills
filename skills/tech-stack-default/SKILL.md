@@ -25,6 +25,8 @@ When a space is created with a project name, a GitHub repository is **automatica
 
 **Keeping an existing project current:** the developer runtime pre-syncs the project repo with the latest template before the coding agent starts. The sync adds missing files, **overwrites platform-managed plumbing** (`managed` in `.forloop/template/.template-sync.json`, default `.github/**`), and reports every other changed file for the agent to decide on — it never overwrites existing app-owned files. The `template-sync` skill ships with the developer agent, not the planner.
 
+**Fresh clone:** a synced repo is not a safe app. Before the first deploy, follow `.forloop/template/POST_CLONE.md` — rewrite the manifest identity/`baseUrl`, set `flEnv` explicitly, re-grant every connection (ids are sprint+env-specific), fund the app wallet, and reset source-app ids/URLs/seeds/E2E fixtures. Never reuse the source app's identity.
+
 ### Repository Naming Convention
 
 ```
@@ -454,10 +456,16 @@ resource decision checklist and story templates.
 | Platform | GitHub Actions |
 | Auth | GitHub OIDC → AWS IAM role assumption (chained: control-plane → tenant role) |
 | OIDC audience | `forloop-deploy` |
+| Config/credentials | Fetched **in-job** from the ForLoop broker; no stored AWS keys, role ARNs, app credentials, or `floop_` tokens |
 | Triggers | Commit message parsing: `[deploy frontend]`, `[deploy backend]`, `[deploy all]`, `[skip deploy]` |
 | Environment | `main` branch → `prd`, all other branches → `dev` |
 
 **Production** = merge to `main` (`prd`) → the pipeline deploys into the user's dedicated **tenant** AWS account. The tenant account, DNS, certificates, S3/CloudFront baseline, and state bucket are pre-provisioned; projects only create the Lambda/ECR/DynamoDB/API-route resources. See the `production-deployment` skill for the full flow, production URLs, resource naming, verification, and rollback. Never plan manual AWS-console deployments or third-party hosting.
+
+The only GitHub-stored values are the **dev-only E2E story fixtures** (host
+session token, Scheduler signing secret, two meeting ids) plus optional app
+variables (Realtime wiring, Stripe price fallbacks). None are deploy
+credentials; missing fixtures make live assertions self-skip.
 
 ### Deploy Pipeline
 
@@ -466,8 +474,14 @@ resource decision checklist and story templates.
 3. OIDC token minted, deploy config fetched from ForLoop broker
 4. Chained AWS role assumption (control-plane → tenant)
 5. **Frontend**: Build with Vite env vars → sync to S3 (immutable assets + no-cache index.html) → CloudFront invalidation → health check
-6. **Backend**: Terraform apply (creates ECR repo + Lambda shell) → Docker build → push to ECR → `aws lambda update-function-code --image-uri` → health check
-7. PR deployment notifications sent to ForLoop server
+6. **Backend**: Terraform apply (creates ECR repo + Lambda shell) → `docker buildx build --platform linux/amd64 --provenance=false --sbom=false --output type=docker` → push to ECR (3 retries on 429/transient) → Terraform image apply → health check → manifest ingest
+7. **API contract tests**: `tests/api/run.sh` runs with its real exit code; a failure fails the job
+8. PR deployment notifications sent to ForLoop server
+
+**E2E (`e2e.yml`)** has 5 test job definitions (smoke, health, api, realtime,
+story). `e2e-story` shards its spec set across a `[1,2,3]` matrix with
+Playwright `--shard=<index>/<total>`; every job has a 10-minute cap. Missing
+optional fixtures self-skip and stay green.
 
 ### Frontend Deploy Cache Strategy
 
@@ -479,9 +493,9 @@ resource decision checklist and story templates.
 The backend deploys as a Docker container image to AWS Lambda via ECR:
 
 1. **Terraform**: Creates ECR repository (`fl-{account}-{tenant}-{project}`) and Lambda function (empty `image_uri`)
-2. **Docker build**: `docker build -t {ECR_URI} backend/`
-3. **Push**: `docker push {ECR_URI}`
-4. **Update Lambda**: `aws lambda update-function-code --function-name fl-{tenant}-{project}-{env} --image-uri {ECR_URI}`
+2. **Docker build**: `docker buildx build --platform linux/amd64 --provenance=false --sbom=false --output type=docker -t {ECR_URI} backend/` (a plain BuildKit build can emit an OCI index/attestations, which Lambda rejects)
+3. **Push**: `docker push {ECR_URI}` (retry 3× with backoff on registry 429/transient errors)
+4. **Update Lambda**: Terraform apply with the new `lambda_image_uri` (the workflow no longer uses `aws lambda update-function-code` as the primary path)
 
 ECR lifecycle policy retains the last 10 images per environment. Lambda has `ignore_changes = [image_uri]` so CI updates don't cause Terraform drift.
 

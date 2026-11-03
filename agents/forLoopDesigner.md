@@ -129,6 +129,11 @@ Return the **`fileId` and `fileName`** — they are the durable handoff referenc
 - `screens[]` covers every rendered in-scope screen and uses the same route strings as the approved inventory.
 - `outOfScope[]` repeats the approved exclusions so the Planner can present them back to the user.
 
+**Handoff:** the durable reference is `fileId` + `fileName` + `routeMap` (and
+`outOfScope[]`). The Planner writes them into every UI story's `## Design
+Reference` and `## Screen / Route` blocks per `story-creation` / `preview-scoping`.
+Never use the presigned `url` as the handoff — it expires (~30 min).
+
 ### `BLOCKED`
 
 If the inventory is missing required rows, return **without writing a file**:

@@ -3,7 +3,8 @@ name: forloop-context
 description: >
   Use at session start to load context from .forloop/ folder.
   ALWAYS executed first on every new agent session. Loads knowledge, plans,
-  and tasks for continuity. Resolves space ID from manifest, env var, or git branch.
+  and tasks for continuity. Resolves and verifies the sprint ID from
+  forloop.json + the ForLoop API (never from memory).
   DO NOT use when: mid-session (context already loaded), or when no
   .forloop/ folder exists and user doesn't want one created.
 license: MIT
@@ -75,6 +76,24 @@ Space files are at `~/.forloop/sprint-{sprintId}/`.
 3. If no space selected, work at `~/.forloop/` root only
 
 If `~/.forloop/` doesn't exist, create it.
+
+### Sprint identity is data, not memory
+
+Resolve the sprint number from the repo and the API before you quote it or
+write anything:
+
+1. **`forloop.json` → `sprintId`** — the platform-written project metadata.
+   This is the number the deployed app/repo actually belongs to.
+2. `~/.forloop/manifest.json` → `activeSprintId` — session context.
+3. `FORLOOP_SPRINT_ID` or the git branch (`sprint-<id>`) — runtime hints.
+4. `forloopSpaceSprintGet(sprintId=<id>)` — confirm the space title/dates.
+
+If the planner runtime has no app repo (so no `forloop.json`), the API space
+(title/dates) is the authority — not a cached manifest number and never memory.
+If two sources disagree, **stop and reconcile before planning or creating
+stories**. Never repeat a sprint number from conversation history, an earlier
+summary, or a story title. "The app is Sprint N" is a claim that must be
+verified, not remembered.
 
 **Outcomes:**
 
@@ -510,6 +529,7 @@ Options:
 
 - [ ] ~/.forloop/ directory and manifest.json checked (or created)
 - [ ] manifest.json loaded and validated (v2 format with sprintDir)
+- [ ] sprintId verified against `forloop.json` and `forloopSpaceSprintGet` (not memory)
 - [ ] Knowledge, plan, and task files loaded
 - [ ] Context summary built and presented to user
 - [ ] Aivy doc sync completed (`forloopSyncAivyFolder` + `forloopSyncS3ToLocal`)

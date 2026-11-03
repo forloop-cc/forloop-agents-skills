@@ -134,6 +134,10 @@ Use the **File ID**, never a presigned URL (those expire). A preview uploaded be
 
 ## Tool Usage
 
+**Sprint identity:** every create call uses the verified `sprintId` from
+`forloop.json` + `forloopSpaceSprintGet(sprintId=<id>)`. Never fill it from
+memory, a previous plan, or a story title; a mismatch is a stop-and-reconcile.
+
 ### Create a story from template (PREFERRED)
 
 **For implementation tasks:**

@@ -76,6 +76,11 @@ digraph task_flow {
 
 Check manifest first: `~/.forloop/manifest.json`.
 
+**Verify the sprint number before creating stories.** Read `forloop.json` →
+`sprintId` and confirm it with `forloopSpaceSprintGet(sprintId=<id>)`. The
+manifest and branch are hints; never create stories against a remembered or
+assumed number. A mismatch is a stop-and-reconcile.
+
 Get plan file from manifest. If missing, scan `~/.forloop/sprint-{sprintId}/plan/` for the latest `plan-{sprintId}-*.md`.
 
 **Extract from plan:**
@@ -583,6 +588,7 @@ Always call story-points skill before story creation. If estimation fails, use d
 ## Quality Gates
 
 - [ ] `knowledge-application.md` reviewed (understand current architecture before task breakdown)
+- [ ] sprintId verified against `forloop.json` + `forloopSpaceSprintGet` (not memory)
 - [ ] Developer task status checked via `forloopDeveloperStatus` (don't over-assign if ECS is running)
 - [ ] Plan document read and extracted
 - [ ] Approved app surface inventory + route map extracted for UI work

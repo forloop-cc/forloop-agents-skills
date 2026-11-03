@@ -110,8 +110,29 @@ GitHub Actions job
   → S3 / ECR / Lambda / CloudFront / Terraform operations
 ```
 
-`deploymentTarget: "tenant"` selects the dedicated account. Required repo
-variables: `SERVER_LAMBDA_URL` or `SERVER_LAMBDA_URL_DEV` / `SERVER_LAMBDA_URL_PRD`.
+`deploymentTarget: "tenant"` selects the dedicated account.
+
+### What is stored in GitHub (and what is not)
+
+The pipeline fetches **config and credentials inside the job** via GitHub OIDC
++ the ForLoop broker. There are **no stored AWS access keys, role ARNs, app
+credentials, or `floop_` tokens** in GitHub.
+
+| Value | Where it comes from |
+| --- | --- |
+| AWS roles / account, tenant/project, `flEnv`, URLs, `sprintId` | Broker (`POST /api/github/deploy/config`) |
+| App credential, `floop_` API token, agent secrets, OIDC client | Broker + `agent-secrets/ensure`, fetched **per job** (never a job output) |
+| Stripe publishable key, Realtime connection/base/contract | Broker |
+| Broker URL (`serverLambdaApi`) | `forloop.json` (preferred); `SERVER_LAMBDA_URL*` repo vars are fallback only |
+| Dev-only E2E story fixtures | **Stored exceptions:** `E2E_STORY170_HOST_AUTH_TOKEN` (secret), `E2E_SCHEDULER_SIGNING_SECRET` (secret), the two meeting-id vars |
+| Optional app vars | `STRIPE_PRICE_*` (frontend fallback), `FORLOOP_REALTIME_*` / `APP_ORIGIN` (only when Realtime is connected), `SCHEDULER_ENDPOINT_ID` / `SCHEDULER_SIGNING_SECRET_PARAMETER_NAME` (Scheduler wiring) — not deploy credentials |
+
+The two secrets are **test fixtures, not deploy credentials**. The host token is
+a user session for the fixture host; the Scheduler secret is the app endpoint's
+HMAC key. The seed is an **operator step** (preferred path: sign in to the app
+and use the app's own session token) — it is not "blocked on CI SSM access".
+Missing fixtures make the affected live assertions self-skip; they are not a
+deploy or CI failure.
 
 ## What the pipeline does
 
@@ -129,14 +150,21 @@ Jobs in `.github/workflows/deploy.yml`:
    - apply #1 creates the **ECR repo + DynamoDB table** (only when the ECR repo
      is missing; re-running it can destroy the live Lambda),
    - `docker buildx build --platform linux/amd64 --provenance=false --sbom=false
-     --output type=docker` + push to ECR (`{env}-{sha}` tag, retries on 429),
+     --output type=docker` + push to ECR (`{env}-{sha}` tag, retried 3× with
+     backoff on 429/transient errors),
    - apply #2 creates the **Lambda (Image package) + API Gateway routes**,
    - health check `GET {apiUrl}/health` until 200,
    - ingest `forloop-manifest.json` (409 = newer stored contract wins).
    A PR run skips this job (CI still validates the backend).
-6. `api-tests` — required contract tests; a failure is red.
+6. `api-tests` — required contract tests; `tests/api/run.sh` runs with its real
+   exit code, so a failing assertion fails the job (never `continue-on-error`).
 7. `notify-deployment` — on PR events, tell the ForLoop server only when at
    least one deploy succeeded (the job uses `always()`).
+
+**Green no-ops vs red:** no `[deploy]`/`[teardown]` tag, teardown of resources
+that were never provisioned, and E2E fixtures that self-skip are intentionally
+green. A red job must be a real build/test/deploy/configuration failure. Do not
+"fix" a no-op by adding `continue-on-error`.
 
 ## Production resource naming (tenant, `env=prd`)
 
@@ -173,7 +201,11 @@ s3://fl-{accountId}-{tenant}-tf-state/project/prd/{project}/terraform.tfstate
 - `forloop-manifest.json` is ingested after the backend verify (409 = newer
   stored contract wins; not a deploy failure).
 - E2E: trigger with `[e2e all]` (or targeted `[e2e frontend]` / `[e2e backend]` /
-  `[e2e story]`); missing optional fixtures self-skip and stay green.
+  `[e2e story]`). The suite has 5 test job definitions (smoke, health, api,
+  realtime, story); `e2e-story` runs a `[1,2,3]` shard matrix with Playwright
+  `--shard=<index>/<total>`. Every job has a **10-minute cap** — sharding is
+  what keeps a large story suite inside it. Missing optional fixtures self-skip
+  and stay green; only a real assertion failure is red.
 
 ## Rollback
 
@@ -185,11 +217,22 @@ deploying again:
 - **Infra:** revert the Terraform change (it is in git) and commit `[deploy ...]`.
 - Verify health and the ingested manifest version after the rollback deploy.
 
+## Fresh clone and app-specific wiring
+
+- **Clone hygiene:** run `.forloop/template/POST_CLONE.md` before the first
+  deploy — rewrite the manifest identity/`baseUrl`, set `flEnv` explicitly,
+  re-grant every connection (ids are sprint+env-specific), fund the wallet, and
+  reset source-app ids/URLs/seeds/E2E fixtures.
+- **Core services:** Notify's canonical send route is `POST /v1/notifications`
+  (there is no `/v1/messages`); Scheduler must be registered + verified before
+  use; paid calls debit the app wallet. Cross-reference `core-service-discovery`
+  for the planning decision and let the Developer own the app-side wiring.
+
 ## Common production failure modes
 
 | Symptom                         | Likely cause / where to look                                  |
 | ------------------------------- | ------------------------------------------------------------- |
-| `Missing SERVER_LAMBDA_URL`     | Repo variable not set (`SERVER_LAMBDA_URL_PRD`).              |
+| `Missing SERVER_LAMBDA_URL`     | `forloop.json` has no `serverLambdaApi` and no fallback var.  |
 | Broker `401/403`                | OIDC audience/trust misconfigured for the repo.               |
 | `Broker response missing tenantRoleArn` | Tenant not onboarded / `deploymentTarget` wrong.     |
 | Frontend not updating           | CloudFront invalidation missing or wrong S3 path.             |

@@ -86,6 +86,12 @@ digraph plan_flow {
 
 Check manifest first: `~/.forloop/manifest.json`. If valid, load plan from `~/.forloop/sprint-{activeSprintId}/plan/`.
 
+**Verify the sprint number before writing.** Read `forloop.json` → `sprintId`
+and confirm it with `forloopSpaceSprintGet(sprintId=<id>)`. The manifest and
+git branch are hints; `forloop.json` + the API are authoritative. A mismatch
+(e.g. the user says #46 but the repo says #47) is a stop-and-reconcile, not a
+guess. Never take the number from memory or a previous summary.
+
 **Also load application context before planning:**
 - Read `knowledge-application.md` (from S3 sync) — understand current architecture, features, and constraints before planning new work
 - Check story comments: `forloopStoryGet(storyId={id}, includeComments=true)` for in-progress stories — know what's being worked on
@@ -394,6 +400,7 @@ forloopSyncLocalToS3(
 ## Plan Validation Checklist
 
 Before completing:
+- [ ] sprintId verified against `forloop.json` + `forloopSpaceSprintGet` (not memory)
 - [ ] Space goal is clear and measurable
 - [ ] Scope boundaries defined (in/out)
 - [ ] For multi-screen UI: App Surface Inventory present, every template route dispositioned, and the user explicitly approved it before any app preview

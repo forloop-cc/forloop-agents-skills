@@ -73,6 +73,12 @@ Skip any step = lying, not verifying
 | Knowledge captured | `forloopFileList` shows knowledge file | File created locally |
 | S3 synced | Fresh `forloopFileList` output | "Upload looked successful" |
 | Space updated | `forloopSpaceSprintGet` shows changes | Tool returned no error |
+| CI/E2E passed | Fresh `gh run view` + the job log/artifact (all story shards) | A green job list, a skipped job, or "no failures shown" |
+
+A benign no-op (no tag, nothing to tear down, missing optional fixture that
+self-skips) is **green**; a real test/build/deploy failure is red. Never claim a
+failure was fixed by adding `continue-on-error`, and never claim green without
+reading the artifact/log.
 
 ---
 
