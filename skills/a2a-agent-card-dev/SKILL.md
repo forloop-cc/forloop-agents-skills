@@ -38,6 +38,12 @@ the whole file is refused, leaving `manifest: null`) or silently dropped, and
 the agent ends up with no contract. Start from
 `forloop-manifest.example.json` and run `node scripts/validate-manifest.mjs`.
 
+> **Paid app-to-app:** if the app charges other apps FLC per call, load
+> `paid-app-to-app-planning`. The manifest gains a root `billing` block (a
+> sibling of `tools`) with fixed integer prices and exact static endpoints;
+> target enablement and caller connection/SpendGrant/wallet actions are
+> separate owner actions.
+
 ## Manifest schema (field contract)
 
 ```jsonc

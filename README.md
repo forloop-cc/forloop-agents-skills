@@ -102,7 +102,7 @@ Try saying: _"@forLoopStoryEvaluator break down our authentication feature and e
 
 Skills are organized by category. Agents load them automatically when they detect a matching trigger.
 
-### Planning (13 skills)
+### Planning (14 skills)
 
 The core planning workflow — from sprint setup through execution.
 
@@ -121,6 +121,7 @@ The core planning workflow — from sprint setup through execution.
 | **knowledge-management** | Capture project learnings and technical decisions automatically. Syncs to S3 for team-wide access. |
 | **production-deployment** | How a project reaches production in the user's dedicated tenant AWS account: `main` → `prd` trigger, GitHub Actions OIDC + chained tenant role, tenant resource naming/production URLs, verification, and rollback. |
 | **realtime-planning** | Plan a ForLoop Realtime integration for a user app: channel (test first, never promote), audience/dimensions, allowed origins, event catalog, delivery sink (direct receiver vs platform inbox), live-event cost, and the realtime-specific integration brief. |
+| **paid-app-to-app-planning** | Plan seller-side ForLoop paid app-to-app: target manifest `billing` prices, caller policy/allowlist, owner-only connection/SpendGrant/wallet actions, caller proxy/A2A integration, and the prd global-flag gate. Not Stripe checkout or paid core-service consumption. |
 
 ### Administration (4 skills)
 
