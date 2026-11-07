@@ -111,7 +111,7 @@ planner never moves funds.
 
 ### 5. Request the connection (user action)
 
-Run `core_service_integration_request` with exactly these scopes:
+Run `a2a_request_connection` with exactly these scopes:
 
 - `realtime.channels:read` — channel list/get, endpoint and subscription reads
 - `realtime.channels:write` — channel create/patch, endpoints, subscriptions
@@ -119,11 +119,12 @@ Run `core_service_integration_request` with exactly these scopes:
 - `realtime.events:write` — publish, delivery retry
 - `realtime.streams:write` — viewer-token mint and revoke
 
-Give the user the returned link and four steps verbatim (open **Aivy Actions →
-App Connections (Beta) → Connect**, choose **This app**, click **Connect**, copy
-the **Connection ID**). Never say it is "recorded" or "pending in the UI" —
-nothing exists until they click Connect. If they cannot, write
-`Connection: to be created during implementation` in the brief and continue.
+This persists a pending request. Call `a2a_open_connection_request({ requestId })`
+to open the owner's App Connections panel (fall back to the returned link if the
+client is offline). Approval is **owner-only**; collaborators can view but not
+approve. After the user confirms, run `a2a_check_connections` and use the real
+connection id/scopes. If it is still pending, write
+`Connection: pending owner approval` in the brief and continue.
 
 If the app also needs the platform inbox, note that it needs a **second**
 app-subject connection to Webhook — plan it as a separate owner action.

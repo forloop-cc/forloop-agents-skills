@@ -84,35 +84,65 @@ published rather than inventing one.
 This tool is read-only. Never claim you funded, reserved, or moved credits — the
 planner cannot move funds.
 
-### 5. Wait for agreement, then request the connection
+### 5. Wait for agreement, then create and open the request
 
 Create nothing until the user agrees. On agreement, call:
 
 ```
-core_service_integration_request({
+a2a_request_connection({
   agentId: "<agentId>",
   scopes: [<exactly the agreed scopes>],
   reason: "<why the app needs it>"
 })
 ```
 
-This tool does **not** create a connection and never handles credentials. It also does **not** store a pending request — nothing exists until the user clicks **Connect**. It returns:
+This persists (or idempotently reuses) a **pending app-subject connection
+request** and returns the request id, the stored scopes, and the approval link.
+It is not a grant and never handles credentials. Dropped scopes mean the target
+manifest no longer declares them; surface that instead of widening the request.
 
-- a deep link to this app's **App Connections → Connect** panel with the service, scopes and `This app` subject preselected (the `…/myspace/<appPublicId>?connect=<agentId>…` link), and
-- the **app-subject connection payload** for reference:
+Then bring the panel forward:
 
-```json
-{
-  "callerSprintId": "<the app's sprint id>",
-  "targetAgentId": "<agentId>",
-  "subjectType": "app",
-  "scopes": ["<agreed scopes>"]
-}
+```
+a2a_open_connection_request({ requestId: "<request id>" })
 ```
 
-Present the link and its four steps exactly as returned. The user must open the app's space, click **Connect**, and copy the **Connection ID**. The planner must not call `POST /api/a2a/connections` itself — that route is Clerk-session (owner UI) auth, not planner-token auth. Never say a request is "recorded" or "pending in the UI"; the Permissions page only shows parked task consents, not this planned grant.
+This emits a socket action that opens the owner's **App Connections** panel
+focused on the request. (`a2a_open_connection_request` also accepts
+`agentId` + `scopes` and creates/reuses the request itself when no id is known.)
 
-If the user cannot complete the approval, write `Connection: to be created during implementation` in the brief and continue. Do not block the plan and do not ask again. When the user does provide a connection id, use it. After approval, confirm or set the spend cap through the user/UI. Never read, print, or store credentials.
+Branch on the result:
+
+- **`socket delivered: yes` / "App Connections opened"** → the panel is already
+  open on the request. Tell the user to click **Approve**. Do not paste the link
+  and do not repeat manual steps.
+- **`socket delivered: no`** → the client was offline. Give the user the returned
+  `link` (it opens the same focused panel) and the step to click **Approve**.
+
+Never ask the user to copy/paste a connection id. The planner cannot approve the
+request: approval is an **owner-only** action in the UI (collaborators can view
+the request but cannot approve it).
+
+When the user says they approved, verify with:
+
+```
+a2a_check_connections({})
+```
+
+Use the **real connection id and granted scopes** it reports — a pending request
+is not a grant. If the request is still pending, say it is waiting for the app
+owner and do not write a connection id into the brief. If it was denied or
+expired, ask before creating a new request. Never say a request does not exist
+after `a2a_open_connection_request` succeeds, and never claim the planner
+approved it.
+
+If the owner cannot complete the approval, write `Connection: pending owner
+approval` in the brief and continue. Do not block the plan and do not ask again.
+After approval, confirm the spend cap with `a2a_check_wallet` and tell the app
+owner to set it in the platform UI: **Credits → select the app wallet → Spend
+cap** (cumulative wallet cap; leave unset for unlimited). The planner cannot set
+it and must not claim a different location. Never read, print, or store
+credentials.
 
 ### 6. Write the integration brief into the story
 
@@ -123,11 +153,11 @@ Use this template verbatim:
 - service: <name> (<agentId>), kind: <system|user>, contract version: <version>
 - base URL: <baseUrl>
 - scopes: <list>
-- connection: <connection id, or "to be created during implementation">
+- connection: <real connection id from a2a_check_connections, or "pending owner approval">
 - endpoints: <method + path per tool>
 - auth: app credential (flc_app_) → POST /api/opencode/a2a/connections/:id/assertion → Authorization: Bearer <assertion>
 - errors: invalid_credential | revoked | expired | insufficient_scope | not_direct_integrable | app_not_found | contract_version_required | contract_version_not_found | contract_version_retired
-- cost: <billingPrice / billingUnit>; spend cap: <amount>
+- cost: <billingPrice / billingUnit>; spend cap: <amount or "unlimited"> (cumulative; owner sets it on Credits → app wallet → Spend cap)
 - wallet: <available balance> / <estimate>; <"funded" or "top up X FLC before implementation">
 - acceptance: <observable behaviour>
 - docs: contract <version> via core_service_get({ agentId, version })
@@ -139,8 +169,9 @@ Use this template verbatim:
 - Never invent an endpoint, scope, version, base URL, or price. Quote the registry and the pinned contract.
 - Always surface cost and scopes before asking for agreement.
 - For a paid service, run `a2a_check_wallet` and surface the balance, estimate, and shortfall before the brief/Developer dispatch. Never let an unfunded integration reach runtime (`402 insufficient_balance`).
-- Never create a connection, grant, or spend cap before the user agrees — and never create one from the planner at all.
-- Never claim a connection request was recorded, stored, or is pending approval. Only the user's **Connect** click creates it.
+- Never create a connection, grant, or spend cap before the user agrees — the planner can request and read connections but never approve or mint a grant.
+- `a2a_request_connection` DOES persist a pending request; say so accurately. Approval is the app owner's action, and only `a2a_check_connections` confirms the resulting grant.
+- Never ask the user to copy/paste a connection id; read it back with `a2a_check_connections` after they approve.
 - Never use curl, wget, or construct API URLs directly.
 - Never handle, log, or store credentials.
 - If no listed service fits, say so plainly and plan to build the capability instead.
