@@ -43,9 +43,8 @@ Use this when a user asks "how does my app get deployed / go live?":
    installs the `ForLoopTenantDeployRole`).
 2. **Production = merge to `main`.** When work is merged into `main`, the
    project's GitHub Actions pipeline builds and deploys automatically.
-3. **The user never touches AWS.** No access keys, no console, no manual steps.
-   The pipeline authenticates with a short-lived GitHub OIDC token and assumes a
-   scoped role inside the tenant account.
+3. **The user never touches AWS.** No access keys, no console, no manual steps —
+   ForLoop runs the infrastructure and the deployment for them.
 4. **Production URL** is `https://{project}.{tenant}.forloop.cc` and the API is
    `https://api.{tenant}.forloop.cc/prd/{project}`.
 
@@ -207,6 +206,60 @@ s3://fl-{accountId}-{tenant}-tf-state/project/prd/{project}/terraform.tfstate
   what keeps a large story suite inside it. Missing optional fixtures self-skip
   and stay green; only a real assertion failure is red.
 
+## Custom domains and the deployment slot
+
+Symptom the owner reports: the sprint-room **Custom domain** window shows the
+**Production Deploy** check failing — "Deploy this app to production before
+claiming a custom domain" — even though the app is live.
+
+What it actually means: the readiness check does not probe the live site. It
+requires the space to be **recorded** as running the production environment.
+That record is written only by the app's release pipeline after a successful
+deploy (the post-deploy release-manifest ingest). A live app whose build
+process does not report its release leaves the record empty, so the check keeps
+failing. The Custom domain feature is frontend-only; it does not require any
+A2A tool surface. The record follows the **last** deploy: a test/develop deploy
+after the production release (for example a post-release docs commit or
+auto-merge) flips it back, so the fix must end with the production release as
+the final deployment.
+
+How to handle it (planning-only):
+
+1. Do **not** ask the user about branches, tags, manifests, slots, pipelines or
+   "which deploy they ran". That is not their job and the answers will not help.
+2. Investigate the release record yourself from the space's deploy/release
+   story comments and developer status. Never fabricate the state.
+3. If the latest production release is confirmed but the record is missing or
+   stale, create **one** `forLoopDevops` story whose brief names the
+   `custom-domain-readiness` skill and covers:
+   - confirm the latest production release succeeded;
+   - verify the app repo reports its release to the platform (release manifest
+     present, post-deploy ingest step present);
+   - if the repo is missing or outdated, sync it to the current template and
+     restore the release signal (do not hand-edit deploy scripts);
+   - sequence the fix so the **production release is the last deployment**:
+     all feature/develop deploys, docs commits and auto-merges finish first,
+     then the `main` release runs, and no deploy starts afterwards (a later
+     develop auto-merge would overwrite the recorded environment);
+   - run a clean production release from `main`;
+   - verify the platform records the space as production and the Custom domain
+     readiness check passes.
+   Acceptance criteria: clean production release as the final deploy, space
+   recorded as production, readiness `Production Deploy` passes, the `.cc` app
+   unchanged.
+4. If the space is already recorded as production and the check still fails,
+   this is a platform defect: do **not** create app stories or keep redeploying;
+   report it with evidence to the platform team and tell the user we are
+   investigating.
+5. Never plan DNS, certificate, CloudFront or tenant-account work in the app
+   story — the custom-domain edge is platform-managed.
+
+Plain-language reply pattern (see `user-communication`): "Your app is live, but
+our platform hasn't received the release signal from the app's build process
+yet, so the custom-domain safety check is still blocking. I've queued the fix
+with the development team — no action needed from you. I'll tell you when the
+check passes."
+
 ## Rollback
 
 There is no `[rollback]` trigger in the parser. Roll back by reverting and
@@ -243,6 +296,7 @@ deploying again:
 | 403 bare `{"message":"Forbidden"}` | Dev source-IP allowlist, not auth.                          |
 | Release/tag 403 | `permissions: contents: write` missing.                        |
 | API 404 but direct invoke works | `basePath` missing in the Lambda handler.                     |
+| Custom domain `Production Deploy` fails though the app is live | Release signal not recorded — see "Custom domains and the deployment slot" |
 
 Use the `deploy-failure-diagnosis` skill (developer side) for the full matrix.
 

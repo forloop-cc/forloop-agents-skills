@@ -102,7 +102,7 @@ Try saying: _"@forLoopStoryEvaluator break down our authentication feature and e
 
 Skills are organized by category. Agents load them automatically when they detect a matching trigger.
 
-### Planning (14 skills)
+### Planning (15 skills)
 
 The core planning workflow — from sprint setup through execution.
 
@@ -119,9 +119,10 @@ The core planning workflow — from sprint setup through execution.
 | **forloop-context** | Session startup — loads knowledge, plans, and tasks from `~/.forloop/` for continuity. Resolves and verifies sprint ID from `forloop.json` + the API (manifest/env/branch are hints), never from memory. |
 | **tech-stack-default** | Standardized ForLoop tech stack defaults (React 18 + Vite, Lambda Node.js 20, DynamoDB, Terraform). Assumed automatically during planning — never asks for confirmation. |
 | **knowledge-management** | Capture project learnings and technical decisions automatically. Syncs to S3 for team-wide access. |
-| **production-deployment** | How a project reaches production in the user's dedicated tenant AWS account: `main` → `prd` trigger, GitHub Actions OIDC + chained tenant role, tenant resource naming/production URLs, verification, and rollback. |
+| **production-deployment** | How a project reaches production in the user's dedicated tenant AWS account: `main` → `prd` trigger, GitHub Actions OIDC + chained tenant role, tenant resource naming/production URLs, verification, rollback, and custom-domain readiness triage. |
 | **realtime-planning** | Plan a ForLoop Realtime integration for a user app: channel (test first, never promote), audience/dimensions, allowed origins, event catalog, delivery sink (direct receiver vs platform inbox), live-event cost, and the realtime-specific integration brief. |
 | **paid-app-to-app-planning** | Plan seller-side ForLoop paid app-to-app: target manifest `billing` prices, caller policy/allowlist, owner-only connection/SpendGrant/wallet actions, caller proxy/A2A integration, and the prd global-flag gate. Not Stripe checkout or paid core-service consumption. |
+| **user-communication** | Plain-language voice for every user-facing reply: outcome first, next step and ownership, no platform internals. Technical precision stays in story descriptions for the development team, with a translation table and worked rewrites. |
 
 ### Administration (4 skills)
 

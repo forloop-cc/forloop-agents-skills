@@ -155,6 +155,8 @@ Use this template verbatim:
 - scopes: <list>
 - connection: <real connection id from a2a_check_connections, or "pending owner approval">
 - endpoints: <method + path per tool>
+- response shape: <per operation: success status + the top-level fields from the contract's `output` schema. Do not summarize as `202 { job }`; list the job fields, e.g. `jobId`, `status`, `params`, `assets`, `expiresAt`.>
+- contract: checksum `<checksum>`; generated app types `backend/src/generated/<service>-contract.d.ts`
 - auth: app credential (flc_app_) → POST /api/opencode/a2a/connections/:id/assertion → Authorization: Bearer <assertion>
 - errors: invalid_credential | revoked | expired | insufficient_scope | not_direct_integrable | app_not_found | contract_version_required | contract_version_not_found | contract_version_retired
 - cost: <billingPrice / billingUnit>; spend cap: <amount or "unlimited"> (cumulative; owner sets it on Credits → app wallet → Spend cap)
