@@ -102,7 +102,7 @@ Try saying: _"@forLoopStoryEvaluator break down our authentication feature and e
 
 Skills are organized by category. Agents load them automatically when they detect a matching trigger.
 
-### Planning (15 skills)
+### Planning (17 skills)
 
 The core planning workflow — from sprint setup through execution.
 
@@ -122,6 +122,8 @@ The core planning workflow — from sprint setup through execution.
 | **production-deployment** | How a project reaches production in the user's dedicated tenant AWS account: `main` → `prd` trigger, GitHub Actions OIDC + chained tenant role, tenant resource naming/production URLs, verification, rollback, and custom-domain readiness triage. |
 | **realtime-planning** | Plan a ForLoop Realtime integration for a user app: channel (test first, never promote), audience/dimensions, allowed origins, event catalog, delivery sink (direct receiver vs platform inbox), live-event cost, and the realtime-specific integration brief. |
 | **paid-app-to-app-planning** | Plan seller-side ForLoop paid app-to-app: target manifest `billing` prices, caller policy/allowlist, owner-only connection/SpendGrant/wallet actions, caller proxy/A2A integration, and the prd global-flag gate. Not Stripe checkout or paid core-service consumption. |
+| **flc-commerce-planning** | Plan app FLC commerce: buyers pay FLC from their USER wallet and the app earns in its APP wallet after fulfillment. Covers per-product rail choice (FLC/Stripe/both), products/entitlements, limits, refunds, withdrawals, fail-closed prerequisites, and the six-story breakdown. Not Stripe checkout, paid app-to-app, or core-service purchases. |
+| **storage-planning** | Plan ForLoop Storage for user-owned files: ownership/subject/connection model, upload intents and signed URLs, scan/quota/trash, grants/invites/standing grants, and the Storage integration brief. Fails closed until the contract and delegated-user exchange exist. Not sprint S3, static assets, or Media. |
 | **user-communication** | Plain-language voice for every user-facing reply: outcome first, next step and ownership, no platform internals. Technical precision stays in story descriptions for the development team, with a translation table and worked rewrites. |
 
 ### Administration (4 skills)
@@ -155,7 +157,7 @@ The plugin-based planner (`@forLoopPlanner`) and several skills require the [For
 
 - `forloop-skill`, `sprint-planning`, `story-creation`, `story-points`
 - `task-tracking`, `template-based-tasks`, `plan-documentation`
-- `file-management`, `user-management`, `agent-auto-assignment`
+- `file-management`, `user-management`, `agent-auto-assignment`, `flc-commerce-planning`, `storage-planning`
 - `aivy-documents-sync`, `forloop-context`
 
 ### ForLoop CLI

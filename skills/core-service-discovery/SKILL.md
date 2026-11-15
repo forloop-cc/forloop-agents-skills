@@ -19,8 +19,19 @@ Use me while planning an app, when a requirement implies a capability a core ser
 - "Send the user an email when the job finishes" → notifications
 - "Run this every Monday at 09:00" → scheduling
 - "Charge the customer once the order ships" → payments
+- "Users upload photos/documents; app A stores them and app B reads what the user shares" → Storage (user-owned files)
+- "Let a user share one file with another app or another ForLoop user" → Storage grants/invites
+
+End-user payments for an app's own virtual products are
+not a core-service purchase. If buyers pay the app in FLC (buyer USER wallet →
+app APP wallet), load `flc-commerce-planning`; if buyers pay by card/USD, load
+`stripe-planning`. Do not propose a core service for either.
 
 Do not use me to design a brand-new service, or to integrate a public third-party API. Those are outside the core-service path.
+
+If discovery returns Storage, load `storage-planning` after this skill. Sprint S3 uploads
+(`file-management`) are not runtime user storage; account storage quotas (`user-management`)
+are not Storage capacity.
 
 ## How to use me
 
@@ -55,6 +66,17 @@ Rank candidates by fit to the requirement. For each candidate you present, quote
 
 Do not paraphrase scopes or tools, and do not add a capability the listing does not claim.
 
+**Translate `authMode` before proposing:**
+
+- `none` — no user/app assertion; not valid for user-owned Storage.
+- `app` — app-subject only (Scheduler/Notify/Media, standing app grants).
+- `user` — delegated user assertion; required for user-owned Storage interactive access.
+
+For Storage, also record: owner (`user:<id>` vs app), subject type (`user`/`app`),
+connection type (`user-subject`/`app-subject`), grant type, payer, console/management URL, and
+conformance requirements (owner=user, grant matrix, pending scan/quarantine, quota,
+trash/restore, revoked grant).
+
 ### 4. Present the decision to the user
 
 For each viable candidate, present:
@@ -84,6 +106,10 @@ published rather than inventing one.
 This tool is read-only. Never claim you funded, reserved, or moved credits — the
 planner cannot move funds.
 
+Storage is free in v1. For a Storage candidate with `billingPrice` 0/absent, skip the wallet
+check and say the user pays nothing per call; only run it if the registry publishes a
+positive price.
+
 ### 5. Wait for agreement, then create and open the request
 
 Create nothing until the user agrees. On agreement, call:
@@ -100,6 +126,11 @@ This persists (or idempotently reuses) a **pending app-subject connection
 request** and returns the request id, the stored scopes, and the approval link.
 It is not a grant and never handles credentials. Dropped scopes mean the target
 manifest no longer declares them; surface that instead of widening the request.
+
+For user-owned Storage, the connection is **user-subject**: pass `subjectType: "user"` to
+`a2a_request_connection` and describe the user's consent, never the app owner's approval. If
+the platform cannot create or return a user-subject request, write
+`Connection: pending user consent (UI-only)` and stop; never create or reuse an app-subject request for user-owned data.
 
 Then bring the panel forward:
 
@@ -153,10 +184,14 @@ Use this template verbatim:
 - service: <name> (<agentId>), kind: <system|user>, contract version: <version>
 - base URL: <baseUrl>
 - scopes: <list>
-- connection: <real connection id from a2a_check_connections, or "pending owner approval">
+- connection: <real connection id from a2a_check_connections, or "pending owner approval" / "pending user consent">
+- owner: <`user:<id>`|app>; subject type: <`user`|`app`>; connection type: <`user-subject`|`app-subject`> (Storage only)
+- grant type: <interactive app|standing app|user invite|object|collection>; payer: <user|app> (Storage only)
+- management: <service-provided console URL, link only> (Storage only)
+- conformance: <owner=user; grant matrix; scan/quota/trash; revoked grant> (Storage only)
 - endpoints: <method + path per tool>
 - response shape: <per operation: success status + the top-level fields from the contract's `output` schema. Do not summarize as `202 { job }`; list the job fields, e.g. `jobId`, `status`, `params`, `assets`, `expiresAt`.>
-- contract: checksum `<checksum>`; generated app types `backend/src/generated/<service>-contract.d.ts`
+- contract: stored checksum `<checksum>`; generated checksum `<generatedChecksum>` (matches `contract-artifact.json`); generated app types `backend/src/generated/<service>-contract.d.ts`
 - auth: app credential (flc_app_) → POST /api/opencode/a2a/connections/:id/assertion → Authorization: Bearer <assertion>
 - errors: invalid_credential | revoked | expired | insufficient_scope | not_direct_integrable | app_not_found | contract_version_required | contract_version_not_found | contract_version_retired
 - cost: <billingPrice / billingUnit>; spend cap: <amount or "unlimited"> (cumulative; owner sets it on Credits → app wallet → Spend cap)
@@ -172,8 +207,10 @@ Use this template verbatim:
 - Always surface cost and scopes before asking for agreement.
 - For a paid service, run `a2a_check_wallet` and surface the balance, estimate, and shortfall before the brief/Developer dispatch. Never let an unfunded integration reach runtime (`402 insufficient_balance`).
 - Never create a connection, grant, or spend cap before the user agrees — the planner can request and read connections but never approve or mint a grant.
-- `a2a_request_connection` DOES persist a pending request; say so accurately. Approval is the app owner's action, and only `a2a_check_connections` confirms the resulting grant.
+- `a2a_request_connection` DOES persist a pending request; say so accurately. Approval is the app owner's action for an app-subject grant and the end user's consent for a user-subject grant; only `a2a_check_connections` confirms the resulting grant.
 - Never ask the user to copy/paste a connection id; read it back with `a2a_check_connections` after they approve.
 - Never use curl, wget, or construct API URLs directly.
 - Never handle, log, or store credentials.
 - If no listed service fits, say so plainly and plan to build the capability instead.
+- For user-owned Storage, never propose an app-subject connection or sprint S3; user consent is a user action, not an app-owner grant.
+- Never plan Storage without the pinned contract and delegated-user exchange; fail closed if either is missing.

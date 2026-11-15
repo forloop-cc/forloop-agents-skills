@@ -9,6 +9,8 @@ description: >
   global-flag gate. NOT for Stripe end-user checkout/subscriptions (use
   stripe-planning) or for paying a ForLoop core service (use
   core-service-discovery).
+  NOT for end-user FLC product purchases where a buyer pays the app for a
+  virtual product (use flc-commerce-planning) or for Stripe checkout.
 license: MIT
 compatibility: opencode
 metadata:
@@ -51,6 +53,9 @@ Do **not** use me when:
   Realtime). That is core-service consumption; use `core-service-discovery`.
 - The user wants end users to pay by Stripe, checkout, subscription, or pricing
   page. Use `stripe-planning`.
+- The app sells a virtual product to end users for FLC (buyer USER wallet → app
+  APP wallet). That is `flc-commerce-planning`; paid app-to-app is other apps
+  paying FLC per API call.
 - The app only exposes a normal free A2A agent/API. Use
   `a2a-agent-card-dev` for planning; the developer's `a2a-agent-spec` authors
   the manifest.
@@ -74,7 +79,9 @@ Ask for the missing decisions; do not invent prices or limits:
   separate platform enablement review.
 
 If the user only wants their own app to charge **end users**, stop: this is not
-the paid app-to-app feature. Plan Stripe instead.
+the paid app-to-app feature. Accepting end-user FLC purchases is
+`flc-commerce-planning`; card/USD checkout is `stripe-planning`. Ask which rail
+if it is ambiguous.
 
 ### 2. Verify the target surface is eligible
 

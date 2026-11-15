@@ -7,6 +7,9 @@ description: >
   breaking the integration into implementable stories (Stripe setup →
   Admin Portal Product Management → Backend → Frontend → Testing). This is a
   PLANNING-ONLY skill.
+  NOT for ForLoop FLC app commerce where an app sells virtual products to
+  ForLoop users and the buyer pays FLC from their USER wallet (use
+  flc-commerce-planning).
   Use when: the user wants to add payment features to their ForLoop project,
   mentions "Stripe", "payments", "checkout", "subscriptions", "pricing plans",
   or "billing". Also use when the user provides Stripe API keys.
@@ -110,9 +113,15 @@ Plan stories that match this architecture, not the legacy bootstrap.
 Only load this skill when the user explicitly requests payment functionality.
 Do NOT propose Stripe integration unless the user asks for it.
 
+**Not FLC app commerce.** If the buyer pays FLC from a ForLoop wallet and the
+app receives FLC in its APP wallet, this is app commerce, not Stripe checkout.
+Load `flc-commerce-planning`; do not model an FLC order as a Stripe session.
+
 ## When NOT to Use
 
 - Writing Stripe code → delegate to `forLoopDeveloper` with `stripe-integration` skill
+- ForLoop FLC app commerce (buyer pays FLC; app earns in its APP wallet) → use
+  `flc-commerce-planning`
 - General space planning without payments → use `sprint-planning`
 - Estimating story points → use `story-points` skill
 

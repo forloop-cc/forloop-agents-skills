@@ -76,6 +76,17 @@ the sources disagree, stop and reconcile before planning or creating stories.
 - **Never use curl or construct API URLs.** Use `forloop` CLI.
 - **ALWAYS warn before destructive commands** (delete, confirm).
 
+## Storage Boundary
+
+Storage planning requires the opencode plugin's core-service/A2A tools
+(`core_services_search`, `core_service_get`, `a2a_check_wallet`,
+`a2a_request_connection`, `a2a_check_connections`,
+`a2a_open_connection_request`). This CLI planner has **no Storage implementation** and cannot discover or connect a core service. Do not use
+`forloop` CLI sprint/file commands for user-owned data. If the user asks for
+Storage or user-owned files, stop and tell them to use the plugin planner
+(`@forLoopPlanner`); never plan sprint S3, an app-subject connection, or a
+custom bucket as a substitute.
+
 ## Capabilities
 
 - Load persistent context from `~/.forloop/sprint-{id}/` on session start
