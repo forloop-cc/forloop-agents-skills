@@ -105,7 +105,11 @@ guesses around it.
    `backend/src/routes/commerce.ts`, and `docs/FLC_COMMERCE.md`. If the module is
    absent, Plan 3 has not landed; stop.
 3. **Manifest `commerce` block is valid.** The template validator accepts:
-   `{ "enabled": true, "endpoint": "/api/commerce/fulfillment" }`.
+   `{ "enabled": true, "endpoint": "/api/commerce/fulfillment" }`, and
+   `application.baseUrl` matches `forloop.json` `flEnv`: dev ->
+   `https://api.system.dev.forloop.cc/<dev|prd>/<project>`, prd ->
+   `https://api.sys.forloop.cc/<dev|prd>/<project>`. Never use the production
+   host for a dev-flEnv app.
    `endpoint` is a path on the app’s own verified origin, never a full URL.
 4. **Buyers can sign in with ForLoop.** The app uses the template ForLoop Login
    flow and its backend knows the buyer’s ForLoop user id. If not, plan ForLoop
