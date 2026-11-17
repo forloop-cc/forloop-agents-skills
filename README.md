@@ -102,7 +102,7 @@ Try saying: _"@forLoopStoryEvaluator break down our authentication feature and e
 
 Skills are organized by category. Agents load them automatically when they detect a matching trigger.
 
-### Planning (17 skills)
+### Planning (18 skills)
 
 The core planning workflow — from sprint setup through execution.
 
@@ -124,6 +124,7 @@ The core planning workflow — from sprint setup through execution.
 | **paid-app-to-app-planning** | Plan seller-side ForLoop paid app-to-app: target manifest `billing` prices, caller policy/allowlist, owner-only connection/SpendGrant/wallet actions, caller proxy/A2A integration, and the prd global-flag gate. Not Stripe checkout or paid core-service consumption. |
 | **flc-commerce-planning** | Plan app FLC commerce: buyers pay FLC from their USER wallet and the app earns in its APP wallet after fulfillment. Covers per-product rail choice (FLC/Stripe/both), products/entitlements, limits, refunds, withdrawals, fail-closed prerequisites, and the six-story breakdown. Not Stripe checkout, paid app-to-app, or core-service purchases. |
 | **storage-planning** | Plan ForLoop Storage for user-owned files: ownership/subject/connection model, upload intents and signed URLs, scan/quota/trash, grants/invites/standing grants, and the Storage integration brief. Fails closed until the contract and delegated-user exchange exist. Not sprint S3, static assets, or Media. |
+| **peer-form-planning** | Plan a peer form for structured input inside an A2A conversation: peer form vs plain text vs in-app console, the `/forms` contract and zero-scope ticket, the sandboxed page and CSP, follow-up `forloop.form-response`, expiry/cancel/retry, and the app-to-app text fallback. Not durable management screens or ordinary page forms. |
 | **user-communication** | Plain-language voice for every user-facing reply: outcome first, next step and ownership, no platform internals. Technical precision stays in story descriptions for the development team, with a translation table and worked rewrites. |
 
 ### Administration (4 skills)
@@ -158,7 +159,7 @@ The plugin-based planner (`@forLoopPlanner`) and several skills require the [For
 - `forloop-skill`, `sprint-planning`, `story-creation`, `story-points`
 - `task-tracking`, `template-based-tasks`, `plan-documentation`
 - `file-management`, `user-management`, `agent-auto-assignment`, `flc-commerce-planning`, `storage-planning`
-- `aivy-documents-sync`, `forloop-context`
+- `peer-form-planning`, `aivy-documents-sync`, `forloop-context`
 
 ### ForLoop CLI
 

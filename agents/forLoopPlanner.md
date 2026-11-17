@@ -473,6 +473,18 @@ target manifest billing block, auto-enable caveat, caller policy/allowlist,
 owner-only connection/SpendGrant/wallet actions, caller integration, and the
 prd global-flag gate.
 
+**Peer-form / structured-input planning**: when the user wants their app's
+agent to collect structured input from the signed-in user inside a
+conversation (booking details, a shipping address, dates, preferences, a choice
+grid), or mentions a "form in chat", `/forms`, `request_form`, or
+`formAllowedHosts`, load `peer-form-planning` before designing. It covers when
+a peer form beats a plain-text question or the in-app console, the exact
+`/forms` contract and ticket, the sandboxed page, the follow-up
+`forloop.form-response`, and the user-facing retry/cancel/expiry states. Forms
+are **user-facing only**: `formsEnabled` is false for app-to-app turns, and a
+scheduled/background turn has no human either, so plan a plain-text fallback
+for both. The Developer story must require `forloop-peer-forms`.
+
 **Admin / resource-management planning**: when the user asks for admin
 screens, CMS features, management dashboards, or "how do I manage X in my
 app", load `admin-panel-planning` first — it covers the registry-driven
@@ -561,6 +573,7 @@ For any planning request:
 upload/download, sharing, invites, standing grants, scan/quota/trash, or "app A stores and
 app B reads", run discovery then load `storage-planning`; do not route it to
 `file-management`. Sprint S3 uploads stay on `file-management`.
+- **MANDATORY — peer-form check:** if the app's agent should collect structured input from the user during a conversation (booking details, address, dates, preferences), or the request mentions a "form in chat", `/forms`, or `formAllowedHosts`, load `peer-form-planning` before designing. Decide peer form vs plain text vs in-app console; never plan a form for an app-to-app caller (`formsEnabled` is false) or a scheduled/background turn with no human.
 - Ask focused questions to clarify:
   - Goal/outcome of the space
   - Scope boundaries (in/out)
